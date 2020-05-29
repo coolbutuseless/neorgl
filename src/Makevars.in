@@ -1,0 +1,14 @@
+#
+# R Makevars file auto-generated using template Makevars.in 
+# AUTO-GENERATED from Makevars.in (using configure)
+# This file is part of the RGL project.
+#
+#-DGL_VERSION_1_2 
+
+CXX_STD = CXX11
+PKG_CPPFLAGS=@CPPFLAGS@ -Iext
+PKG_LIBS=@LIBS@
+PKG_CFLAGS=$(C_VISIBILITY)
+
+all: $(SHLIB) 
+
