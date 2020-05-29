@@ -9,62 +9,71 @@ Rmdnames <- sub("[.]Rd$", ".Rmd", names)
 htmlnames <- sub("[.]Rd$", ".html", names)
 
 # These functions are based on similar ones from tools
-.Rd_deparse <- function (x, tag = TRUE) 
-{
-    if (!tag) 
-        attr(x, "Rd_tag") <- "Rd"
-    paste(as.character(x), collapse = "")
+.Rd_deparse <- function(x, tag = TRUE) {
+  if (!tag) {
+    attr(x, "Rd_tag") <- "Rd"
+  }
+  paste(as.character(x), collapse = "")
 }
-.Rd_drop_nodes_with_tags <- function (x, tags) 
-{
-    recurse <- function(e) {
-        if (is.list(e)) 
-            structure(lapply(e[is.na(match(RdTags(e), tags))], 
-                recurse), Rd_tag = attr(e, "Rd_tag"))
-        else e
+.Rd_drop_nodes_with_tags <- function(x, tags) {
+  recurse <- function(e) {
+    if (is.list(e)) {
+      structure(lapply(
+        e[is.na(match(RdTags(e), tags))],
+        recurse
+      ), Rd_tag = attr(e, "Rd_tag"))
+    } else {
+      e
     }
-    recurse(x)
+  }
+  recurse(x)
 }
-.Rd_drop_comments <- function (x) 
-.Rd_drop_nodes_with_tags(x, "COMMENT")
+.Rd_drop_comments <- function(x) {
+  .Rd_drop_nodes_with_tags(x, "COMMENT")
+}
 
-RdTags <- function (Rd) 
-{
-    res <- sapply(Rd, attr, "Rd_tag")
-    if (!length(res)) 
-        res <- character()
-    res
+RdTags <- function(Rd) {
+  res <- sapply(Rd, attr, "Rd_tag")
+  if (!length(res)) {
+    res <- character()
+  }
+  res
 }
-.Rd_get_section <- function (x, which, predefined = TRUE) 
-{
-    if (predefined) 
-        x <- x[RdTags(x) == paste0("\\", which)]
+.Rd_get_section <- function(x, which, predefined = TRUE) {
+  if (predefined) {
+    x <- x[RdTags(x) == paste0("\\", which)]
+  } else {
+    x <- x[RdTags(x) == "\\section"]
+    if (length(x)) {
+      ind <- sapply(x, function(e) .Rd_get_text(e[[1L]])) ==
+        which
+      x <- lapply(x[ind], `[[`, 2L)
+    }
+  }
+  if (!length(x)) {
+    x
+  } else {
+    structure(x[[1L]], class = "Rd")
+  }
+}
+.Rd_get_example_code <- function(x) {
+  x <- .Rd_get_section(x, "examples")
+  if (!length(x)) {
+    return(character())
+  }
+  x <- .Rd_drop_comments(x)
+  recurse <- function(e) {
+    if (is.list(e)) {
+      unlist(lapply(
+        e[is.na(match(RdTags(e), c("\\donttest", "\\dontrun")))],
+        recurse
+      ))
+    }
     else {
-        x <- x[RdTags(x) == "\\section"]
-        if (length(x)) {
-            ind <- sapply(x, function(e) .Rd_get_text(e[[1L]])) == 
-                which
-            x <- lapply(x[ind], `[[`, 2L)
-        }
+      e
     }
-    if (!length(x)) 
-        x
-    else structure(x[[1L]], class = "Rd")
-}
-.Rd_get_example_code <- function (x) 
-{
-    x <- .Rd_get_section(x, "examples")
-    if (!length(x)) 
-        return(character())
-    x <- .Rd_drop_comments(x)
-    recurse <- function(e) {
-        if (is.list(e)) {
-            unlist(lapply(e[is.na(match(RdTags(e), c("\\donttest", "\\dontrun")))], 
-                recurse))
-        }
-        else e
-    }
-    .Rd_deparse(recurse(x), tag = FALSE)
+  }
+  .Rd_deparse(recurse(x), tag = FALSE)
 }
 library(rgl)
 options(rgl.useNULL = TRUE, rgl.printRglwidget = TRUE)
@@ -75,9 +84,10 @@ skip <- c("rgl-package", "shinyGetPar3d")
 
 for (i in seq_along(db)) {
   Rmd <- file(Rmdnames[i], open = "wt")
-  nextlink <- if (i < length(htmlnames)) paste0("[Next](", htmlnames[i+1], ")") else ""
-  writeLines(c('---', paste0('title: ', names[i]), 
-'output: html_document
+  nextlink <- if (i < length(htmlnames)) paste0("[Next](", htmlnames[i + 1], ")") else ""
+  writeLines(c(
+    "---", paste0("title: ", names[i]),
+    "output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -87,35 +97,39 @@ options(rgl.useNULL = TRUE, rgl.printRglwidget = TRUE)
 library(rgl)
 options(ask = FALSE, examples.ask = FALSE, device.ask.default = FALSE)
 ```
-'), Rmd)
+"
+  ), Rmd)
   writeLines(paste(prevlink, nextlink, indexlink), Rmd)
-  if (file_path_sans_ext(Rmdnames[i]) %in% skip)
+  if (file_path_sans_ext(Rmdnames[i]) %in% skip) {
     writeLines(
-'```{r eval = FALSE}
-# This example is skipped in the demo.', Rmd)
-  else
-    writeLines('```{r}', Rmd)
-  
+      "```{r eval = FALSE}
+# This example is skipped in the demo.", Rmd
+    )
+  } else {
+    writeLines("```{r}", Rmd)
+  }
+
   code <- .Rd_get_example_code(db[[i]])
   writeLines(code, Rmd)
   writeLines(
-'```
+    "```
 ```{r echo=FALSE,include=FALSE}
 setwd(initialWd)
 while(length(rgl.dev.list())) rgl.close()
 ```
-', Rmd)
+", Rmd
+  )
   writeLines(paste(prevlink, nextlink, indexlink), Rmd)
   close(Rmd)
   prevlink <- paste0("[Prev](", htmlnames[i], ")")
   rmarkdown::render(Rmdnames[i])
-  while(length(rgl.dev.list())) rgl.close()
+  while (length(rgl.dev.list())) rgl.close()
 }
 
 indexname <- "index.Rmd"
 index <- file(indexname, open = "wt")
 writeLines(
-'---
+  '---
 title: "rgl Examples"
 author: "Duncan Murdoch"
 output: html_document
@@ -124,7 +138,8 @@ output: html_document
 These files show all examples from every help file
 in `rgl`.  
 
-', index)
+', index
+)
 writeLines(paste0("[", names, "](", htmlnames, ")  "), index)
 close(index)
 

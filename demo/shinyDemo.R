@@ -1,2 +1,3 @@
 shiny::runApp(system.file("shinyDemo", package = "rgl"),
-              launch.browser = TRUE)
+  launch.browser = TRUE
+)

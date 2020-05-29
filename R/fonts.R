@@ -1,4 +1,4 @@
-# The rgl font database is only used when rgl is configured for freetype.  
+# The rgl font database is only used when rgl is configured for freetype.
 # Usually this is not true in Windows, and the windowsFonts are used instead.
 
 # This code is closely modelled on the Quartz font database.
@@ -9,29 +9,33 @@ assign(".rglFonts", list(), envir = .rglEnv)
 
 # Check that the font has the correct structure and information
 checkrglFont <- function(font) {
-    if (!is.character(font) || length(font) != 4)
-        stop("Invalid rgl font:  must be 4 filenames")
-    font
+  if (!is.character(font) || length(font) != 4) {
+    stop("Invalid rgl font:  must be 4 filenames")
+  }
+  font
 }
 
 setrglFonts <- function(fonts, fontNames) {
-    fonts <- lapply(fonts, checkrglFont)
-    fontDB <- get(".rglFonts", envir=.rglEnv)
-    existingFonts <- fontNames %in% names(fontDB)
-    if (sum(existingFonts) > 0)
-        fontDB[fontNames[existingFonts]] <- fonts[existingFonts]
-    if (sum(existingFonts) < length(fontNames))
-        fontDB <- c(fontDB, fonts[!existingFonts])
-    assign(".rglFonts", fontDB, envir=.rglEnv)
+  fonts <- lapply(fonts, checkrglFont)
+  fontDB <- get(".rglFonts", envir = .rglEnv)
+  existingFonts <- fontNames %in% names(fontDB)
+  if (sum(existingFonts) > 0) {
+    fontDB[fontNames[existingFonts]] <- fonts[existingFonts]
+  }
+  if (sum(existingFonts) < length(fontNames)) {
+    fontDB <- c(fontDB, fonts[!existingFonts])
+  }
+  assign(".rglFonts", fontDB, envir = .rglEnv)
 }
 
 printFont <- function(font) {
-    paste(font, "\n", sep="")
+  paste(font, "\n", sep = "")
 }
 
 printFonts <- function(fonts) {
-    cat(paste(names(fonts), ": ", unlist(lapply(fonts, printFont)),
-              sep="", collapse=""))
+  cat(paste(names(fonts), ": ", unlist(lapply(fonts, printFont)),
+    sep = "", collapse = ""
+  ))
 }
 
 # If no arguments spec'ed, return entire font database
@@ -42,7 +46,7 @@ printFonts <- function(fonts) {
 # all of which must be named args)
 rglFonts <- function(...) {
   ndots <- length(fonts <- list(...))
-  if (ndots==0) {
+  if (ndots == 0) {
     get(".rglFonts", .rglEnv)
   } else {
     fontNames <- names(fonts)

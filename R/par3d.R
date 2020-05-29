@@ -1,13 +1,14 @@
-.Par3d <- c("antialias", "FOV", "ignoreExtent", "listeners",
-            "mouseMode", "observer", 
-            "modelMatrix", "projMatrix", "skipRedraw", "userMatrix",
-            "userProjection",
-            "scale", "viewport", "zoom", "bbox", "windowRect",
-            "family", "font", "cex", "useFreeType", "fontname",
-            "maxClipPlanes", "glVersion", "activeSubscene"
+.Par3d <- c(
+  "antialias", "FOV", "ignoreExtent", "listeners",
+  "mouseMode", "observer",
+  "modelMatrix", "projMatrix", "skipRedraw", "userMatrix",
+  "userProjection",
+  "scale", "viewport", "zoom", "bbox", "windowRect",
+  "family", "font", "cex", "useFreeType", "fontname",
+  "maxClipPlanes", "glVersion", "activeSubscene"
 )
 
-.Par3d.readonly <- c( 
+.Par3d.readonly <- c(
   "antialias", "observer",
   "modelMatrix", "projMatrix",
   "bbox", "fontname",
@@ -15,23 +16,26 @@
   "activeSubscene"
 )
 
-par3d <- function (..., no.readonly = FALSE, dev = rgl.cur(), subscene = currentSubscene3d(dev))
-{
+par3d <- function(..., no.readonly = FALSE, dev = rgl.cur(), subscene = currentSubscene3d(dev)) {
   single <- FALSE
   args <- list(...)
-  if (!length(args))
-    args <- as.list(if (no.readonly)
+  if (!length(args)) {
+    args <- as.list(if (no.readonly) {
       .Par3d[-match(.Par3d.readonly, .Par3d)]
-      else .Par3d)
-  else {
-    if (is.null(names(args)) && all(unlist(lapply(args, is.character))))
+    } else {
+      .Par3d
+    })
+  } else {
+    if (is.null(names(args)) && all(unlist(lapply(args, is.character)))) {
       args <- as.list(unlist(args))
+    }
     if (length(args) == 1) {
-      if (is.list(args[[1]]) | is.null(args[[1]]))
+      if (is.list(args[[1]]) | is.null(args[[1]])) {
         args <- args[[1]]
-      else
-        if(is.null(names(args)))
-          single <- TRUE
+      } else
+      if (is.null(names(args))) {
+        single <- TRUE
+      }
     }
   }
   if ("dev" %in% names(args)) {
@@ -47,29 +51,35 @@ par3d <- function (..., no.readonly = FALSE, dev = rgl.cur(), subscene = current
   dev <- as.integer(dev)
   if (!dev) dev <- open3d()
   subscene <- as.integer(subscene)
-  
+
   if ("userMatrix" %in% names(args)) {
     m <- args$userMatrix
     svd <- svd(m[1:3, 1:3])
     m[1:3, 1:3] <- svd$u %*% t(svd$v)
-    theta <- atan2(-m[1,3], m[1,1])
-    m <-  m %*% rotationMatrix(theta, 0,1,0)
+    theta <- atan2(-m[1, 3], m[1, 1])
+    m <- m %*% rotationMatrix(theta, 0, 1, 0)
     svd <- svd(m[1:3, 1:3])
-    m[1:3,1:3] <- svd$u %*% t(svd$v)	
-    phi <- atan2(-m[2,3], m[3,3])
-    args$.position <- c(theta, phi)*180/pi
+    m[1:3, 1:3] <- svd$u %*% t(svd$v)
+    phi <- atan2(-m[2, 3], m[3, 3])
+    args$.position <- c(theta, phi) * 180 / pi
   }
   if (forceViewport <- ("windowRect" %in% names(args) &&
-      !("viewport" %in% names(args)))) {
-    if (specifiedSubscene)
-      warning("Viewport for subscene ", subscene,
-              " will be adjusted; other viewports will not be.")
-    oldviewport <- .Call(rgl_par3d, dev, subscene, list("viewport","windowRect"))
+    !("viewport" %in% names(args)))) {
+    if (specifiedSubscene) {
+      warning(
+        "Viewport for subscene ", subscene,
+        " will be adjusted; other viewports will not be."
+      )
+    }
+    oldviewport <- .Call(rgl_par3d, dev, subscene, list("viewport", "windowRect"))
   }
   value <-
-    if (single) .Call(rgl_par3d, dev, subscene, args)[[1]] 
-  else .Call(rgl_par3d, dev, subscene, args)
-  
+    if (single) {
+      .Call(rgl_par3d, dev, subscene, args)[[1]]
+    } else {
+      .Call(rgl_par3d, dev, subscene, args)
+    }
+
   # The windowRect might be modified by the window manager (if
   # too large, for example), so we need to read it after the
   # change
@@ -78,10 +88,11 @@ par3d <- function (..., no.readonly = FALSE, dev = rgl.cur(), subscene = current
     Sys.sleep(0.1)
     windowRect <- .Call(rgl_par3d, dev, subscene, list("windowRect"))$windowRect
     newsize <- windowRect[3:4] - windowRect[1:2]
-    .Call(rgl_par3d, dev, subscene, 
-          list(viewport = round(oldviewport$viewport*newsize/oldsize)))
+    .Call(
+      rgl_par3d, dev, subscene,
+      list(viewport = round(oldviewport$viewport * newsize / oldsize))
+    )
   }
-  
-  if(!is.null(names(args))) invisible(value) else value
-}
 
+  if (!is.null(names(args))) invisible(value) else value
+}

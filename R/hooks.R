@@ -26,9 +26,10 @@ rglId <- function(ids = integer()) {
 }
 
 print.rglId <- function(x, rglwidget = getOption("rgl.printRglwidget", FALSE),
-			...) {
-  if (rglwidget)
+                        ...) {
+  if (rglwidget) {
     # FIXME:  For lowlevel, this should replace the scene, not update the history
     print(rglwidget(...))
+  }
   invisible(x)
 }

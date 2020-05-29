@@ -6,13 +6,9 @@
 
 ##
 ## quit R plugin
-## 
+##
 ##
 
 rgl.quit <- function() {
-
   unloadNamespace("rgl")
-
 }
-
-
