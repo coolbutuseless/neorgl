@@ -3,26 +3,26 @@ RGL - 3D visualization device system for R using OpenGL
 
 INTRODUCTION
 ------------
-The RGL package is a visualization device system for R, using 
-OpenGL as the rendering backend. An rgl device at its core 
-is a real-time 3D engine written in C++. It provides an 
+The RGL package is a visualization device system for R, using
+OpenGL as the rendering backend. An rgl device at its core
+is a real-time 3D engine written in C++. It provides an
 interactive viewpoint navigation facility (mouse + wheel support)
 and an R programming interface.
 
 
 LICENSE
 -------
-The software is released under the GNU Public License. 
+The software is released under the GNU Public License.
 See "COPYING" textfile for details.
 
 
 FEATURES
 --------
 - portable R Plug-in using OpenGL on MacOSX, Win32 and X11
-- R programming interface 
+- R programming interface
 - interactive viewpoint navigation
 - automatic data focus
-- geometry primitives: 
+- geometry primitives:
   points, lines, triangles, quads, texts, point sprites
 - high-level geometry:
   surface, spheres
@@ -54,7 +54,7 @@ On Windows, Rtools40
 REQUIREMENTS
 ------------
 Windowing System (unix/x11 or win32)
-OpenGL Library 
+OpenGL Library
 OpenGL Utility Library (GLU)
 
 Installation on Debian:
@@ -65,7 +65,7 @@ aptitude install libgl1-mesa-dev libglu1-mesa-dev
 OPTIONS
 -------
 libpng library version 1.2.9 or newer (pixmap import/export support)
-freetype library (optional on Unix for resizable 
+freetype library (optional on Unix for resizable
 anti-aliased fonts), required on Windows
 
 
@@ -85,13 +85,13 @@ pacman -S mingw-w64-{i686,x86_64}-freetype
 
 Then the usual R CMD INSTALL should work.
 
-BUILDING ON UNIX-STYLE OS (MacOS X, Linux, FreeBSD, ... ) 
+BUILDING ON UNIX-STYLE OS (MacOS X, Linux, FreeBSD, ... )
 ---------------------------------------------------------
 
 The build is controlled by an autoconf configure script.
 You provide the options through the R CMD build/INSTALL command
 
-  e.g. 
+  e.g.
     $ R CMD INSTALL --configure-args="<configure args...>" rgl
 
 
@@ -106,7 +106,7 @@ You provide the options through the R CMD build/INSTALL command
 
   --with-gl-prefix=<libprefix>
     GL library prefix (e.g. Mesa)
-  
+
   --disable-libpng
     disable libpng support
 
@@ -115,10 +115,10 @@ You provide the options through the R CMD build/INSTALL command
 
   --disable-libpng-config
     explicitly disable libpng-config
-  
+
   --disable-libpng-dynamic
     use static libpng library
-    
+
 You may find that your distro doesn't have all necessary development
 libraries installed:  read the error messages for hints!  This line
 has been reported to be sufficient on FC 5 or 6:
@@ -136,6 +136,11 @@ has been reported to be sufficient on FC 5 or 6:
 
   --x-libraries=<path>
     X11 library linkage path
+
+
+  OSX
+  ---------------------------
+  R CMD INSTALL --configure-args="--x-includes=/opt/X11/include --x-libraries=/opt/X11/lib" rgl
 
 
 FIRST DEMOS: LOADING LIBRARY AND RUNNING DEMONSTRATIONS

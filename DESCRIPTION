@@ -1,4 +1,4 @@
-Package: rgl
+Package: neorgl
 Version: 0.102.0
 Title: 3D Visualization Using OpenGL
 Author: Daniel Adler <dadler@uni-goettingen.de>, Duncan Murdoch <murdoch.duncan@gmail.com>, and others (see README)
