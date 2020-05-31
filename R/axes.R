@@ -106,6 +106,86 @@ axis3d <- function(edge, at = NULL, labels = TRUE, tick = TRUE, line = 0,
   lowlevel(result)
 }
 
+
+
+#' Draw boxes, axes and other text outside the data
+#' 
+#' These functions draw axes, boxes and text outside the range of the data.
+#' \code{axes3d}, \code{box3d} and \code{title3d} are the higher level
+#' functions; normally the others need not be called directly by users.
+#' 
+#' The rectangular prism holding the 3D plot has 12 edges.  They are identified
+#' using 3 character strings.  The first character (`x', `y', or `z') selects
+#' the direction of the axis.  The next two characters are each `-' or `+',
+#' selecting the lower or upper end of one of the other coordinates.  If only
+#' one or two characters are given, the remaining characters default to `-'.
+#' For example \code{edge = 'x+'} draws an x-axis at the high level of y and
+#' the low level of z.
+#' 
+#' By default, \code{axes3d} uses the \code{\link{bbox3d}} function to draw the
+#' axes.  The labels will move so that they do not obscure the data.
+#' Alternatively, a vector of arguments as described above may be used, in
+#' which case fixed axes are drawn using \code{axis3d}.
+#' 
+#' If \code{pos} is a numeric vector of length 3, \code{edge} determines the
+#' direction of the axis and the tick marks, and the values of the other two
+#' coordinates in \code{pos} determine the position.  See the examples.
+#' 
+#' @aliases axes3d axis3d mtext3d title3d box3d
+#' @param edges a code to describe which edge(s) of the box to use; see Details
+#' below
+#' @param labels whether to label the axes, or (for \code{axis3d}) the labels
+#' to use
+#' @param tick whether to use tick marks
+#' @param nticks suggested number of ticks
+#' @param box draw the full box if \code{"bbox"} axes are used
+#' @param expand how much to expand the box around the data
+#' @param main the main title for the plot
+#' @param sub the subtitle for the plot
+#' @param xlab,ylab,zlab the axis labels for the plot
+#' @param line the ``line'' of the plot margin to draw the label on
+#' @param edge,pos the position at which to draw the axis or text
+#' @param text the text to draw
+#' @param at the value of a coordinate at which to draw the axis
+#' @param \dots additional parameters which are passed to \code{\link{bbox3d}}
+#' or \code{\link{material3d}}
+#' @return These functions are called for their side effects.  They return the
+#' object IDs of objects added to the scene.
+#' @author Duncan Murdoch
+#' @seealso Classic graphics functions \code{\link{axis}}, \code{\link{box}},
+#' \code{\link{title}}, \code{\link{mtext}}, and \pkg{rgl} function
+#' \code{\link{bbox3d}}.
+#' @keywords dynamic
+#' @examples
+#' 
+#'   open3d()
+#'   points3d(rnorm(10), rnorm(10), rnorm(10))
+#' 
+#'   # First add standard axes
+#'   axes3d()  
+#' 
+#'   # and one in the middle (the NA will be ignored, a number would 
+#'   # do as well)
+#'   axis3d('x', pos = c(NA, 0, 0))
+#' 
+#'   # add titles
+#'   title3d('main', 'sub', 'xlab', 'ylab', 'zlab')
+#' 
+#'   rgl.bringtotop()
+#'   
+#'   open3d()
+#'   points3d(rnorm(10), rnorm(10), rnorm(10))
+#'   
+#'   # Use fixed axes
+#'   
+#'   axes3d(c('x', 'y', 'z'))
+#'          
+#'   # Put 4 x-axes on the plot
+#'   axes3d(c('x--', 'x-+', 'x+-', 'x++'))         
+#'   
+#'   axis3d('x', pos = c(NA, 0, 0))     
+#'   title3d('main', 'sub', 'xlab', 'ylab', 'zlab')
+#' 
 axes3d <- function(edges = "bbox", labels = TRUE,
                    tick = TRUE, nticks = 5, box = FALSE, expand = 1.03, ...) {
   save <- par3d(skipRedraw = TRUE, ignoreExtent = TRUE)

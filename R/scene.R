@@ -122,6 +122,37 @@ rgl.attrib.ncol.values <- c(
   family = 1, font = 1, pos = 1
 )
 
+
+
+#' Get information about attributes of objects
+#' 
+#' These functions give information about the attributes of \pkg{rgl} objects.
+#' \code{rgl.attrib.info} is the more \dQuote{user-friendly} function;
+#' \code{rgl.attrib.count} is a lower-level function more likely to be used in
+#' programming.
+#' 
+#' See the first example below to get the full list of attribute names.
+#' 
+#' @aliases rgl.attrib.info rgl.attrib.count
+#' @param id One or more \pkg{rgl} object ids.
+#' @param attribs A character vector of one or more attribute names.
+#' @param showAll Should attributes with zero entries be shown?
+#' @param attrib A single attribute name.
+#' @return A dataframe containing the following columns: \item{id}{The id of
+#' the object.} \item{attrib}{The full name of the attribute.} \item{nrow,
+#' ncol}{The size of matrix that would be returned by \code{\link{rgl.attrib}}
+#' for this attribute.}
+#' @author Duncan Murdoch
+#' @seealso \code{\link{rgl.attrib}} to obtain the attribute values.
+#' @examples
+#' 
+#' open3d()
+#' id <- points3d(rnorm(100), rnorm(100), rnorm(100), col = "green")
+#' rgl.attrib.info(id, showAll = TRUE)
+#' rgl.attrib.count(id, "vertices")
+#' 
+#' merge(rgl.attrib.info(), rgl.ids("all"))
+#' 
 rgl.attrib.info <- function(id = rgl.ids("all", 0)$id, attribs = NULL, showAll = FALSE) {
   ncol <- rgl.attrib.ncol.values
   if (is.null(attribs)) {
@@ -158,6 +189,55 @@ rgl.attrib.info <- function(id = rgl.ids("all", 0)$id, attribs = NULL, showAll =
   result
 }
 
+
+
+#' Get information about shapes
+#' 
+#' Retrieves information about the shapes in a scene.
+#' 
+#' If the identifier is not found or is not a shape that has the given
+#' attribute, zero will be returned by \code{rgl.attrib.count}, and an empty
+#' matrix will be returned by \code{rgl.attrib}.
+#' 
+#' The first four \code{attrib} names correspond to the usual OpenGL
+#' properties; \code{"dim"} is used just for surfaces, defining the rows and
+#' columns in the rectangular grid; \code{"cex"}, \code{"adj"},
+#' \code{"family"}, \code{"font"} and \code{"pos"} apply only to text objects.
+#' 
+#' @param id A shape identifier, as returned by \code{\link{rgl.ids}}.
+#' @param attrib An attribute of a shape.  Currently supported: one of \cr
+#' \code{"vertices"}, \code{"normals"}, \code{"colors"}, \code{"texcoords"},
+#' \code{"dim"}, \code{"texts"}, \code{"cex"}, \code{"adj"}, \code{"radii"},
+#' \code{"centers"}, \code{"ids"}, \code{"usermatrix"}, \code{"types"},
+#' \code{"flags"}, \code{"offsets"}, \code{"family"}, \code{"font"},
+#' \code{"pos"}\cr or unique prefixes to one of those.
+#' @param first,last Specify these to retrieve only those rows of the result.
+#' @return \code{rgl.attrib} returns the values of the attribute.  Attributes
+#' are mostly real-valued, with the following sizes: \tabular{lll}{
+#' \code{"vertices"} \tab 3 values \tab x, y, z \cr \code{"normals"} \tab 3
+#' values \tab x, y, z \cr \code{"centers"} \tab 3 values \tab x, y, z \cr
+#' \code{"colors"} \tab 4 values \tab r, g, b, a \cr \code{"texcoords"} \tab 2
+#' values \tab s, t \cr \code{"dim"} \tab 2 values \tab r, c \cr \code{"cex"}
+#' \tab 1 value \tab cex \cr \code{"adj"} \tab 2 values \tab x, y \cr
+#' \code{"radii"} \tab 1 value \tab r \cr \code{"ids"} \tab 1 value \tab id \cr
+#' \code{"usermatrix"} \tab 4 values \tab x, y, z, w \cr \code{"texts"} \tab 1
+#' value \tab text \cr \code{"types"} \tab 1 value \tab type \cr \code{"flags"}
+#' \tab 1 value \tab flag \cr \code{"family"} \tab 1 value \tab family \cr
+#' \code{"font"} \tab 1 value \tab font \cr \code{"pos"} \tab 1 value \tab pos
+#' \cr } The \code{"texts"}, \code{"types"} and \code{"family"} attributes are
+#' character-valued; the \code{"flags"} attribute is logical valued, with named
+#' rows.
+#' 
+#' These are returned as matrices with the row count equal to the count for the
+#' attribute, and the columns as listed above.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{rgl.ids}}, \code{\link{rgl.attrib.info}}
+#' @keywords graphics
+#' @examples
+#' 
+#' p <- plot3d(rnorm(100), rnorm(100), rnorm(100), type = "s", col = "red")
+#' rgl.attrib(p["data"], "vertices", last = 10)
+#' 
 rgl.attrib <- function(id, attrib, first = 1,
                        last = rgl.attrib.count(id, attrib)) {
   stopifnot(length(attrib) == 1 && length(id) == 1 && length(first) == 1)
@@ -297,6 +377,62 @@ rgl.bg <- function(sphere = FALSE, fogtype = "none", color = c("black", "white")
 ##
 ##
 
+
+
+#' Set up Bounding Box decoration
+#' 
+#' Set up the bounding box decoration.
+#' 
+#' Four different types of tick mark layouts are possible. This description
+#' applies to the X axis; other axes are similar: If \code{xat} is not
+#' \code{NULL}, the ticks are set up at custom positions.  If \code{xunit} is
+#' numeric but not zero, it defines the tick mark base.  If it is
+#' \code{"pretty"} (the default in \code{bbox3d}), ticks are set at
+#' \code{\link{pretty}} locations.  If \code{xlen} is not zero, it specifies
+#' the number of ticks (a suggestion if \code{xunit} is \code{"pretty"}).
+#' 
+#' The first color specifies the bounding box, while the second one specifies
+#' the tick mark and font color.
+#' 
+#' \code{bbox3d} defaults to \code{\link{pretty}} locations for the axis labels
+#' and a slightly larger box, whereas \code{rgl.bbox} covers the exact range.
+#' 
+#' \code{\link{axes3d}} offers more flexibility in the specification of the
+#' axes, but they are static, unlike those drawn by \code{\link{rgl.bbox}} and
+#' \code{\link{bbox3d}}.
+#' 
+#' @aliases rgl.bbox bbox3d
+#' @param xat,yat,zat vector specifying the tickmark positions
+#' @param xlab,ylab,zlab character vector specifying the tickmark labeling
+#' @param xunit,yunit,zunit value specifying the tick mark base for uniform
+#' tick mark layout
+#' @param xlen,ylen,zlen value specifying the number of tickmarks
+#' @param marklen value specifying the length of the tickmarks
+#' @param marklen.rel logical, if TRUE tick mark length is calculated using
+#' 1/\code{marklen} * axis length, otherwise tick mark length is \code{marklen}
+#' in coordinate space
+#' @param expand value specifying how much to expand the bounding box around
+#' the data
+#' @param draw_front draw the front faces of the bounding box
+#' @param ... Material properties (or other \code{rgl.bbox} parameters in the
+#' case of \code{bbox3d}). See \code{\link{rgl.material}} for details.
+#' @return This function is called for the side effect of setting the bounding
+#' box decoration.  A shape ID is returned to allow \code{\link{rgl.pop}} to
+#' delete it.
+#' @seealso \code{\link{rgl.material}}, \code{\link{axes3d}}
+#' @keywords dynamic
+#' @examples
+#' 
+#'   rgl.open()
+#'   rgl.points(rnorm(100), rnorm(100), rnorm(100))
+#'   rgl.bbox(color = c("#333377", "white"), emission = "#333377", 
+#'            specular = "#3333FF", shininess = 5, alpha = 0.8 )
+#'   
+#'   open3d()
+#'   points3d(rnorm(100), rnorm(100), rnorm(100))
+#'   bbox3d(color = c("#333377", "black"), emission = "#333377", 
+#'          specular = "#3333FF", shininess = 5, alpha = 0.8)
+#' 
 rgl.bbox <- function(
                      xat = NULL, xlab = NULL, xunit = 0, xlen = 5,
                      yat = NULL, ylab = NULL, yunit = 0, ylen = 5,
@@ -435,6 +571,61 @@ rgl.light <- function(theta = 0, phi = 0, viewpoint.rel = TRUE, ambient = "#FFFF
 ##
 ##
 
+
+
+#' add primitive set shape
+#' 
+#' Adds a shape node to the current scene
+#' 
+#' Adds a shape node to the scene. The appearance is defined by the material
+#' properties.  See \code{\link{rgl.material}} for details.
+#' 
+#' The names of these functions correspond to OpenGL primitives.  They all take
+#' a sequence of vertices in \code{x, y, z}.  The only non-obvious ones are
+#' \code{rgl.lines} which draws line segments based on pairs of vertices, and
+#' \code{rgl.linestrips} which joins the vertices.
+#' 
+#' For triangles and quads, the normals at each vertex may be specified using
+#' \code{normals}.  These may be given in any way that would be acceptable as a
+#' single argument to \code{\link[grDevices]{xyz.coords}}.  These need not
+#' match the actual normals to the polygon: curved surfaces can be simulated by
+#' using other choices of normals.
+#' 
+#' Texture coordinates may also be specified.  These may be given in any way
+#' that would be acceptable as a single argument to
+#' \code{\link[grDevices]{xy.coords}}, and are interpreted in terms of the
+#' bitmap specified as the material texture, with \code{(0, 0)} at the lower
+#' left, \code{(1, 1)} at the upper right.  The texture is used to modulate the
+#' color of the polygon.
+#' 
+#' These are the lower level functions called by \code{\link{points3d}},
+#' \code{\link{segments3d}}, \code{\link{lines3d}}, etc.  The two principal
+#' differences between the \code{rgl.*} functions and the \code{*3d} functions
+#' are that the former set all unspecified material properties to defaults,
+#' whereas the latter use current values as defaults; the former make
+#' persistent changes to material properties with each call, whereas the latter
+#' make temporary changes only for the duration of the call.
+#' 
+#' @aliases rgl.primitive rgl.points rgl.lines rgl.linestrips rgl.triangles
+#' rgl.quads
+#' @param x,y,z coordinates.  Any reasonable way of defining the coordinates is
+#' acceptable.  See the function \code{\link[grDevices]{xyz.coords}} for
+#' details.
+#' @param normals Normals at each point.
+#' @param texcoords Texture coordinates at each point.
+#' @param ... Material properties. See \code{\link{rgl.material}} for details.
+#' @return Each primitive function returns the integer object ID of the shape
+#' that was added to the scene.  These can be passed to \code{\link{rgl.pop}}
+#' to remove the object from the scene.
+#' @seealso \code{\link{rgl.material}}, \code{\link{rgl.spheres}},
+#' \code{\link{rgl.texts}}, \code{\link{rgl.surface}},
+#' \code{\link{rgl.sprites}}
+#' @keywords dynamic
+#' @examples
+#' 
+#' rgl.open()
+#' rgl.points(rnorm(1000), rnorm(1000), rnorm(1000), color = heat.colors(1000))
+#' 
 rgl.primitive <- function(type, x, y = NULL, z = NULL, normals = NULL, texcoords = NULL, ...) {
   rgl.material(...)
 
@@ -531,6 +722,86 @@ perm_parity <- function(p) {
   return(result %% 2)
 }
 
+
+
+#' add height-field surface shape
+#' 
+#' Adds a surface to the current scene. The surface is defined by a matrix
+#' defining the height of each grid point and two vectors defining the grid.
+#' 
+#' Adds a surface mesh to the current scene. The surface is defined by the
+#' matrix of height values in \code{y}, with rows corresponding to the values
+#' in \code{x} and columns corresponding to the values in \code{z}.
+#' 
+#' The \code{coords} parameter can be used to change the geometric
+#' interpretation of \code{x}, \code{y}, and \code{z}.  The first entry of
+#' \code{coords} indicates which coordinate (\code{1 = X}, \code{2 = Y},
+#' \code{3 = Z}) corresponds to the \code{x} parameter.  Similarly the second
+#' entry corresponds to the \code{y} parameter, and the third entry to the
+#' \code{z} parameter.  In this way surfaces may be defined over any coordinate
+#' plane.
+#' 
+#' If the normals are not supplied, they will be calculated automatically based
+#' on neighbouring points.
+#' 
+#' Texture coordinates run from 0 to 1 over each dimension of the texture
+#' bitmap.  If texture coordinates are not supplied, they will be calculated to
+#' render the texture exactly once over the grid.  Values greater than 1 can be
+#' used to repeat the texture over the surface.
+#' 
+#' \code{rgl.surface} always draws the surface with the `front' upwards (i.e.
+#' towards higher \code{y} values).  This can be used to render the top and
+#' bottom differently; see \code{\link{rgl.material}} and the example below.
+#' 
+#' If the \code{x} or \code{z} argument is a matrix, then it must be of the
+#' same dimension as \code{y}, and the values in the matrix will be used for
+#' the corresponding coordinates. This is used to plot shapes such as cylinders
+#' where y is not a function of x and z.
+#' 
+#' \code{NA} values in the height matrix are not drawn.
+#' 
+#' @param x values corresponding to rows of \code{y}, or matrix of x
+#' coordinates
+#' @param y matrix of height values
+#' @param z values corresponding to columns of \code{y}, or matrix of z
+#' coordinates
+#' @param coords See details
+#' @param ... Material and texture properties. See \code{\link{rgl.material}}
+#' for details.
+#' @param normal_x,normal_y,normal_z matrices of the same dimension as \code{y}
+#' giving the coordinates of normals at each grid point
+#' @param texture_s,texture_t matrices of the same dimension as \code{z} giving
+#' the coordinates within the current texture of each grid point
+#' @return The object ID of the displayed surface is returned invisibly.
+#' @seealso \code{\link{rgl.material}}, \code{\link{surface3d}},
+#' \code{\link{terrain3d}}.  See \code{\link{persp3d}} for a higher level
+#' interface.
+#' @keywords dynamic
+#' @examples
+#' 
+#' 
+#' #
+#' # volcano example taken from "persp"
+#' #
+#' 
+#' data(volcano)
+#' 
+#' y <- 2 * volcano        # Exaggerate the relief
+#' 
+#' x <- 10 * (1:nrow(y))   # 10 meter spacing (S to N)
+#' z <- 10 * (1:ncol(y))   # 10 meter spacing (E to W)
+#' 
+#' ylim <- range(y)
+#' ylen <- ylim[2] - ylim[1] + 1
+#' 
+#' colorlut <- terrain.colors(ylen) # height color lookup table
+#' 
+#' col <- colorlut[ y - ylim[1] + 1 ] # assign colors to heights for each point
+#' 
+#' rgl.open()
+#' rgl.surface(x, z, y, color = col, back = "lines")
+#' 
+#' 
 rgl.surface <- function(x, z, y, coords = 1:3, ..., normal_x = NULL, normal_y = NULL, normal_z = NULL,
                         texture_s = NULL, texture_t = NULL) {
   rgl.material(...)
@@ -853,6 +1124,52 @@ rgl.sprites <- function(x, y = NULL, z = NULL, radius = 1.0, shapes = NULL,
 ## convert user coordinate to window coordinate
 ##
 
+
+
+#' Convert between rgl user and window coordinates
+#' 
+#' This function converts from 3-dimensional user coordinates to 3-dimensional
+#' window coordinates.
+#' 
+#' These functions convert between user coordinates and window coordinates.
+#' 
+#' Window coordinates run from 0 to 1 in X, Y, and Z.  X runs from 0 on the
+#' left to 1 on the right; Y runs from 0 at the bottom to 1 at the top; Z runs
+#' from 0 foremost to 1 in the background.  \code{rgl} does not currently
+#' display vertices plotted outside of this range, but in normal circumstances
+#' will automatically resize the display to show them.  In the example below
+#' this has been suppressed.
+#' 
+#' @aliases rgl.user2window rgl.window2user rgl.projection
+#' @param x,y,z Input coordinates.  Any reasonable way of defining the
+#' coordinates is acceptable.  See the function
+#' \code{\link[grDevices]{xyz.coords}} for details.
+#' @param projection The rgl projection to use
+#' @param dev,subscene The rgl device and subscene to work with
+#' @return The coordinate conversion functions produce a matrix with columns
+#' corresponding to the X, Y, and Z coordinates.
+#' 
+#' \code{rgl.projection()} returns a list containing the following components:
+#' \item{model}{the modelview matrix} \item{projection}{the projection matrix}
+#' \item{viewport}{the viewport vector}
+#' 
+#' See \code{\link{par3d}} for more details.
+#' @author Ming Chen / Duncan Murdoch
+#' @seealso \code{\link{select3d}}
+#' @keywords dynamic
+#' @examples
+#' 
+#' open3d()
+#' points3d(rnorm(100), rnorm(100), rnorm(100))
+#' if (interactive() || !.Platform$OS == "unix") {
+#' # Calculate a square in the middle of the display and plot it
+#' square <- rgl.window2user(c(0.25, 0.25, 0.75, 0.75, 0.25), 
+#'                           c(0.25, 0.75, 0.75, 0.25, 0.25), 0.5)
+#' par3d(ignoreExtent = TRUE)
+#' lines3d(square)
+#' par3d(ignoreExtent = FALSE)
+#' }
+#' 
 rgl.user2window <- function(x, y = NULL, z = NULL, projection = rgl.projection()) {
   xyz <- xyz.coords(x, y, z, recycle = TRUE)
   points <- rbind(xyz$x, xyz$y, xyz$z)
@@ -922,6 +1239,22 @@ rgl.selectstate <- function(dev = rgl.cur(), subscene = currentSubscene3d(dev)) 
 }
 
 
+
+
+#' Switch to select mode, and return the mouse position selected.
+#' 
+#' Mostly for internal use, this function temporarily installs a handler on a
+#' button of the mouse that will return the mouse coordinates of one click and
+#' drag rectangle.
+#' 
+#' 
+#' @param button Which button to use?
+#' @param dev,subscene The rgl device and subscene to work with
+#' @return A vector of four coordinates: the X and Y coordinates of the start
+#' and end of the dragged rectangle.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{rgl.select3d}}, a version that allows the selection
+#' region to be used to select points in the scene.
 rgl.select <- function(button = c("left", "middle", "right"),
                        dev = rgl.cur(), subscene = currentSubscene3d(dev)) {
   if (rgl.useNULL()) {

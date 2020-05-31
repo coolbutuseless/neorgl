@@ -34,6 +34,69 @@ toRotmatrix <- function(x) {
   ), 3, 3)
 }
 
+
+
+#' Interpolator for par3d parameters
+#' 
+#' Returns a function which interpolates \code{par3d} parameter values,
+#' suitable for use in animations.
+#' 
+#' This function is intended to be used in constructing animations.  It
+#' produces a function that returns a list suitable to pass to
+#' \code{\link{par3d}}, to set the viewpoint at a given point in time.
+#' 
+#' All of the parameters are optional.  Only those \code{par3d} parameters that
+#' are specified will be returned.
+#' 
+#' The input values other than \code{times} may each be specified as lists,
+#' giving the parameter value settings at a fixed time, or as matrices or
+#' arrays.  If not lists, the following formats should be used:
+#' \code{userMatrix} can be a \code{4 x 4 x n} array, or a \code{4 x 4n}
+#' matrix; \code{scale} should be an \code{n x 3} matrix; \code{zoom} and
+#' \code{FOV} should be length \code{n} vectors.
+#' 
+#' An alternative form of input is to put all of the above arguments into a
+#' list (i.e. a list of lists, or a list of arrays/matrices/vectors), and pass
+#' it as the first argument.  This is the most convenient way to use this
+#' function with the function \code{\link{tkpar3dsave}}.
+#' 
+#' Interpolation is by cubic spline or linear interpolation in an appropriate
+#' coordinate-wise fashion.  Extrapolation may oscillate (repeat the sequence
+#' forward, backward, forward, etc.), cycle (repeat it forward), be constant
+#' (no repetition outside the specified time range), or be natural (linear on
+#' an appropriate scale).  In the case of cycling, the first and last specified
+#' values should be equal, or the last one will be dropped.  Natural
+#' extrapolation is only supported with spline interpolation.
+#' 
+#' @param times Times at which values are recorded or a list; see below
+#' @param userMatrix Values of \code{par3d("userMatrix")}
+#' @param scale Values of \code{par3d("scale")}
+#' @param zoom Values of \code{par3d("zoom")}
+#' @param FOV Values of \code{par3d("FOV")}
+#' @param method Method of interpolation
+#' @param extrapolate How to extrapolate outside the time range
+#' @param dev Which rgl device to use
+#' @param subscene Which subscene to use
+#' @return A function is returned.  The function takes one argument, and
+#' returns a list of \code{par3d} settings interpolated to that time.
+#' @note Prior to rgl version 0.95.1476, the \code{subscene} argument defaulted
+#' to the current subscene, and any additional entries would be ignored by
+#' \code{\link{play3d}}.  The current default value of \code{par3d("listeners",
+#' dev = dev)} means that all subscenes that share mouse responses will also
+#' share modifications by this function.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{play3d}} to play the animation.
+#' @keywords dplot
+#' @examples
+#' 
+#' f <- par3dinterp( zoom = c(1, 2, 3, 1) )
+#' f(0)
+#' f(1)
+#' f(0.5)
+#' \dontrun{
+#' play3d(f)
+#' }
+#' 
 par3dinterp <- function(times = NULL, userMatrix, scale, zoom, FOV, method = c("spline", "linear"),
                         extrapolate = c("oscillate", "cycle", "constant", "natural"),
                         dev = rgl.cur(), subscene = par3d("listeners", dev = dev)) {
@@ -161,6 +224,61 @@ par3dinterp <- function(times = NULL, userMatrix, scale, zoom, FOV, method = c("
   }
 }
 
+
+
+#' Create a function to spin a scene at a fixed rate
+#' 
+#' This creates a function to use with \code{\link{play3d}} to spin an rgl
+#' scene at a fixed rate.
+#' 
+#' 
+#' @param axis The desired axis of rotation
+#' @param rpm The rotation speed in rotations per minute
+#' @param dev Which rgl device to use
+#' @param subscene Which subscene to use
+#' @return A function with header \code{function(time, base = M)}, where
+#' \code{M} is the result of \code{par3d("userMatrix")} at the time the
+#' function is created.  This function calculates and returns a list containing
+#' \code{userMatrix} updated by spinning the base matrix for \code{time}
+#' seconds at \code{rpm} revolutions per minute about the specified
+#' \code{axis}.
+#' @note Prior to rgl version 0.95.1476, the \code{subscene} argument defaulted
+#' to the current subscene, and any additional entries would be ignored by
+#' \code{\link{play3d}}.  The current default value of \code{par3d("listeners",
+#' dev = dev)} means that all subscenes that share mouse responses will also
+#' share modifications by this function.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{play3d}} to play the animation
+#' @keywords dplot
+#' @examples
+#' 
+#' # Spin one object
+#' open3d()
+#' plot3d(oh3d(col = "lightblue", alpha = 0.5))
+#' if (!rgl.useNULL())
+#'   play3d(spin3d(axis = c(1, 0, 0), rpm = 30), duration = 2)
+#' 
+#' # Show spinning sprites, and rotate the whole view
+#' open3d()
+#' spriteid <- NULL
+#' 
+#' spin1 <- spin3d(rpm = 4.5 ) # the scene spinner
+#' spin2 <- spin3d(rpm = 9 ) # the sprite spinner
+#' 
+#' f <- function(time) {
+#'     par3d(skipRedraw = TRUE) # stops intermediate redraws
+#'     on.exit(par3d(skipRedraw = FALSE)) # redraw at the end
+#' 
+#'     rgl.pop(id = spriteid) # delete the old sprite
+#'     cubeid <- shade3d(cube3d(), col = "red")
+#'     spriteid <<- sprites3d(0:1, 0:1, 0:1, shape = cubeid,
+#'                    userMatrix = spin2(time, 
+#'                      base = spin1(time)$userMatrix)$userMatrix)
+#'     spin1(time)
+#' }
+#' if (!rgl.useNULL())
+#'   play3d(f, duration = 2)
+#' 
 spin3d <- function(axis = c(0, 0, 1), rpm = 5, dev = rgl.cur(), subscene = par3d("listeners", dev = dev)) {
   force(axis)
   force(rpm)
@@ -172,6 +290,105 @@ spin3d <- function(axis = c(0, 0, 1), rpm = 5, dev = rgl.cur(), subscene = par3d
   }
 }
 
+
+
+#' Play animation of rgl scene
+#' 
+#' \code{play3d} calls a function repeatedly, passing it the elapsed time in
+#' seconds, and using the result of the function to reset the viewpoint.
+#' \code{movie3d} does the same, but records each frame to a file to make a
+#' movie.
+#' 
+#' The function \code{f} will be called in a loop with the first argument being
+#' the \code{startTime} plus the time in seconds since the start (where the
+#' start is measured after all arguments have been evaluated).
+#' 
+#' \code{play3d} is likely to place a high load on the CPU; if this is a
+#' problem, calls to \code{\link{Sys.sleep}} should be made within the function
+#' to release time to other processes.
+#' 
+#' \code{play3d} will run for the specified \code{duration} (in seconds), but
+#' can be interrupted by pressing \code{ESC} while the rgl window has the
+#' focus.
+#' 
+#' \code{movie3d} saves each frame to disk in a filename of the form
+#' \file{framesXXX.png}, where XXX is the frame number, starting from 0.  If
+#' \code{convert} is \code{NULL} (the default) and the
+#' \pkg{\link[magick]{magick}} package is installed, it will be used to convert
+#' the frames to a GIF movie (or other format if supported).  If
+#' \pkg{\link[magick]{magick}} is not installed or \code{convert} is
+#' \code{TRUE}, \code{movie3d} will attempt to use the external
+#' \command{ImageMagick} program to convert the frames to a movie.  The newer
+#' \command{magick} executable is tried first, then \command{convert} if that
+#' fails. The \code{type} argument will be passed to \command{ImageMagick} to
+#' use as a file extension to choose the file type.
+#' 
+#' Finally, \code{convert} can be a template for a command to execute in the
+#' standard shell (wildcards are allowed). The template is converted to a
+#' command using \cr \code{\link{sprintf}(convert, fps, frames, movie, type,
+#' duration, dir)} \cr For example, \code{convert = TRUE} uses the template
+#' \code{"magick -delay 1x%d %s*.png %s.%s"}. All work is done in the directory
+#' \code{dir}, so paths should not be needed in the command.  (Note that
+#' \code{\link{sprintf}} does not require all arguments to be used, and
+#' supports formats that use them in an arbitrary order.)
+#' 
+#' The \code{top = TRUE} default is designed to work around an OpenGL
+#' limitation: in some implementations, \code{\link{rgl.snapshot}} will fail if
+#' the window is not topmost.
+#' 
+#' As of rgl version 0.94, the \code{dev} argument is not needed: the function
+#' \code{f} can specify its device, as \code{\link{spin3d}} does, for example.
+#' However, if \code{dev} is specified, it will be selected as the current
+#' device as each update is played.
+#' 
+#' As of rgl version 0.95.1476, \code{f} can include multiple values in a
+#' \code{"subscene"} component, and \code{par3d()} will be called for each of
+#' them.
+#' 
+#' @aliases play3d movie3d
+#' @param f A function returning a list that may be passed to
+#' \code{\link{par3d}}
+#' @param duration The duration of the animation
+#' @param dev Which rgl device to select
+#' @param \dots Additional parameters to pass to \code{f}.
+#' @param startTime Initial time at which to start the animation
+#' @param fps Number of frames per second
+#' @param movie The base of the output filename, not including .gif
+#' @param frames The base of the name for each frame
+#' @param dir A directory in which to create temporary files for each frame of
+#' the movie
+#' @param convert How to convert to a GIF movie; see Details
+#' @param clean If \code{convert} is \code{NULL} or \code{TRUE}, whether to
+#' delete the individual frames
+#' @param verbose Whether to report the \code{convert} command and the output
+#' filename
+#' @param top Whether to call \code{\link{rgl.bringtotop}} before each frame
+#' @param type What type of movie to create.  See Details.
+#' @return \code{play3d} is called for the side effect of its repeated calls to
+#' \code{f}. It returns \code{NULL} invisibly.
+#' 
+#' \code{movie3d} is also normally called for the side effect of producing the
+#' output movie.  It invisibly returns
+#' @author Duncan Murdoch, based on code by Michael Friendly
+#' @seealso \code{\link{spin3d}} and \code{\link{par3dinterp}} return functions
+#' suitable to use as \code{f}. See \code{demo(flag)} for an example that
+#' modifies the scene in \code{f}.
+#' @keywords dplot
+#' @examples
+#' 
+#' open3d()
+#' plot3d( cube3d(col = "green") )
+#' M <- par3d("userMatrix")
+#' if (!rgl.useNULL())
+#'   play3d( par3dinterp(time = (0:2)*0.75, userMatrix = list(M,
+#'                                      rotate3d(M, pi/2, 1, 0, 0),
+#'                                      rotate3d(M, pi/2, 0, 1, 0) ) ), 
+#'         duration = 3 )
+#' \dontrun{
+#' movie3d( spin3d(), duration = 5 )
+#' }
+#' 
+#' 
 play3d <- function(f, duration = Inf, dev = rgl.cur(), ..., startTime = 0) {
   # Don't want to start timing until args are known: they may be obtained
   # interactively

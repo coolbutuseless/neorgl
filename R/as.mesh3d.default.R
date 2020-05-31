@@ -67,6 +67,60 @@ as.mesh3d.default <- function(x, y = NULL, z = NULL,
   mesh
 }
 
+
+
+#' Convert object in plot to mesh3d object.
+#' 
+#' This method attempts to read the attributes of objects in the rgl display
+#' and construct a mesh3d object to approximate them.
+#' 
+#' This function attempts to construct a triangle mesh to approximate one or
+#' more objects from the current display.  It can only handle objects of types
+#' from \code{c("triangles", "quads", "planes", "surface")}.
+#' 
+#' Since this method only produces triangular meshes, they won't necessarily be
+#' an exact match to the original object.
+#' 
+#' If the generic \code{\link{as.mesh3d}} is called with no \code{x} argument,
+#' this method will be called with \code{x} set to the ids in the current
+#' scene.
+#' 
+#' @param x A vector of rgl identifiers of objects in the specified subscene.
+#' @param type A vector of names of types of shapes to convert.  Other shapes
+#' will be ignored.
+#' @param subscene Which subscene to look in; the default \code{NA} specifies
+#' the current subscene.
+#' @param \dots Ignored.
+#' @return A triangular mesh object.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{as.triangles3d.rglId}} for extracting the triangles,
+#' \code{\link{clipMesh3d}} to apply complex clipping to a mesh object.
+#' @examples
+#' 
+#' # volcano example taken from "persp"
+#' #
+#' data(volcano)
+#' 
+#' z <- 2 * volcano        # Exaggerate the relief
+#' 
+#' x <- 10 * (1:nrow(z))   # 10 meter spacing (S to N)
+#' y <- 10 * (1:ncol(z))   # 10 meter spacing (E to W)
+#' 
+#' zlim <- range(y)
+#' zlen <- zlim[2] - zlim[1] + 1
+#' 
+#' colorlut <- terrain.colors(zlen) # height color lookup table
+#' 
+#' col <- colorlut[ z - zlim[1] + 1 ] # assign colors to heights for each point
+#' 
+#' open3d(useNULL = TRUE)
+#' surface3d(x, y, z, color = col)
+#' m <- as.mesh3d()
+#' rgl.close()
+#' 
+#' open3d()
+#' shade3d(m)
+#' 
 as.mesh3d.rglId <- function(x, type = NA, subscene = NA,
                             ...) {
   local_t <- function(x) {
@@ -138,6 +192,37 @@ as.mesh3d.rglId <- function(x, type = NA, subscene = NA,
   }
 }
 
+
+
+#' Merge duplicate vertices in mesh object
+#' 
+#' A mesh object can have the same vertex listed twice.  Each copy is allowed
+#' to have separate normals, texture coordinates, and color. However, it is
+#' more efficient to have just a single copy if those differences aren't
+#' needed.  For automatic smoothing using \code{\link{addNormals}}, triangles
+#' and quads need to share vertices. This function merges identical (or
+#' similar) vertices to achieve this.
+#' 
+#' 
+#' @param mesh A \code{\link{mesh3d}} object.
+#' @param notEqual A logical matrix indicating that certain pairs should not be
+#' merged even if they appear identical.
+#' @param attribute Which attribute(s) should be considered in comparing
+#' vertices?  A vector chosen from \code{c("vertices", "colors", "normals",
+#' "texcoords"))}
+#' @param tolerance When comparing vertices using \code{\link{all.equal}}, this
+#' tolerance will be used to ignore rounding error.
+#' @return A new mesh object.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{as.mesh3d.rglId}}, which often constructs mesh objects
+#' containing a lot of duplication.
+#' @examples
+#' 
+#' (mesh1 <- cube3d())
+#' id <- shade3d(mesh1, col = rainbow(6), meshColor = "face")
+#' (mesh2 <- as.mesh3d(id))
+#' (mesh3 <- mergeVertices(mesh2))
+#' 
 mergeVertices <- function(mesh, notEqual = NULL, attribute = "vertices",
                           tolerance = sqrt(.Machine$double.eps)) {
   nvert <- ncol(mesh$vb)

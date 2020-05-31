@@ -1,3 +1,28 @@
+#' Add normal vectors to objects so they render more smoothly.
+#' 
+#' This generic function adds normals at each of the vertices of a polyhedron
+#' by averaging the normals of each incident face.  This has the effect of
+#' making the surface of the object appear smooth rather than faceted when
+#' rendered.
+#' 
+#' Currently methods are supplied for \code{\link[=mesh3d]{"mesh3d"}} and
+#' \code{\link[=shapelist3d]{"shapelist3d"}} classes.
+#' 
+#' @aliases addNormals addNormals.mesh3d addNormals.shapelist3d
+#' @param x An object to which to add normals.
+#' @param \dots Additional parameters which will be passed to the methods.
+#' Currently unused.
+#' @return A new object of the same class as \code{x}, with normals added.
+#' @author Duncan Murdoch
+#' @keywords dynamic
+#' @examples
+#' 
+#' open3d()
+#' y <- subdivision3d(tetrahedron3d(col = "red"), depth = 3)
+#' shade3d(y) # No normals
+#' y <- addNormals(y)
+#' shade3d(translate3d(y, x = 1, y = 0, z = 0)) # With normals
+#' 
 addNormals <- function(x, ...) UseMethod("addNormals")
 
 addNormals.mesh3d <- function(x, ...) {

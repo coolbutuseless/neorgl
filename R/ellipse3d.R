@@ -1,3 +1,65 @@
+#' Make an ellipsoid
+#' 
+#' A generic function and several methods returning an ellipsoid or other
+#' outline of a confidence region for three parameters.
+#' 
+#' 
+#' @aliases ellipse3d ellipse3d.default ellipse3d.lm ellipse3d.glm
+#' ellipse3d.nls
+#' @param x An object. In the default method the parameter \code{x} should be a
+#' square positive definite matrix at least 3x3 in size. It will be treated as
+#' the correlation or covariance of a multivariate normal distribution.
+#' @param \dots Additional parameters to pass to the default method or to
+#' \code{\link{qmesh3d}}.
+#' @param scale If \code{x} is a correlation matrix, then the standard
+#' deviations of each parameter can be given in the scale parameter.  This
+#' defaults to \code{c(1, 1, 1)}, so no rescaling will be done.
+#' @param centre The centre of the ellipse will be at this position.
+#' @param level The confidence level of a simultaneous confidence region.  The
+#' default is 0.95, for a 95\% region.  This is used to control the size of the
+#' ellipsoid.
+#' @param t The size of the ellipse may also be controlled by specifying the
+#' value of a t-statistic on its boundary.  This defaults to the appropriate
+#' value for the confidence region.
+#' @param which This parameter selects which variables from the object will be
+#' plotted.  The default is the first 3.
+#' @param subdivide This controls the number of subdivisions (see
+#' \code{\link{subdivision3d}}) used in constructing the ellipsoid.  Higher
+#' numbers give a smoother shape.
+#' @param smooth If \code{TRUE}, smooth interpolation of normals is used; if
+#' \code{FALSE}, a faceted ellipsoid will be displayed.
+#' @param dispersion The value of dispersion to use.  If specified, it is
+#' treated as fixed, and chi-square limits for \code{t} are used. If missing,
+#' it is taken from \code{summary(x)}.
+#' @return A \code{\link{mesh3d}} object representing the ellipsoid.
+#' @keywords dplot
+#' @examples
+#' 
+#' # Plot a random sample and an ellipsoid of concentration corresponding to a 95% 
+#' # probability region for a
+#' # trivariate normal distribution with mean 0, unit variances and 
+#' # correlation 0.8.
+#' if (requireNamespace("MASS")) {
+#'   Sigma <- matrix(c(10, 3, 0, 3, 2, 0, 0, 0, 1), 3, 3)
+#'   Mean <- 1:3
+#'   x <- MASS::mvrnorm(1000, Mean, Sigma)
+#'   
+#'   open3d()
+#'   
+#'   plot3d(x, box = FALSE)
+#'   
+#'   plot3d( ellipse3d(Sigma, centre = Mean), col = "green", alpha = 0.5, add = TRUE)
+#' }  
+#' 
+#' # Plot the estimate and joint 90% confidence region for the displacement and cylinder
+#' # count linear coefficients in the mtcars dataset
+#' 
+#' data(mtcars)
+#' fit <- lm(mpg ~ disp + cyl , mtcars)
+#' 
+#' open3d()
+#' plot3d(ellipse3d(fit, level = 0.90), col = "blue", alpha = 0.5, aspect = TRUE)
+#' 
 ellipse3d <- function(x, ...) {
   UseMethod("ellipse3d")
 }

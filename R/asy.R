@@ -1,3 +1,62 @@
+#' Write Asymptote code for an rgl scene
+#' 
+#' Asymptote is a language for 3D graphics that is highly integrated with
+#' LaTeX.  This is an experimental function to write an Asymptote program to
+#' approximate an rgl scene.
+#' 
+#' Asymptote is both a language describing a 2D or 3D graphic, and a program to
+#' interpret that language and produce output in a variety of formats including
+#' EPS, PDF (interactive or static), etc.
+#' 
+#' The interactive scene produced with \code{prc = TRUE} requires \code{outtype
+#' = "pdf"}, and (as of this writing) has a number of limitations: \itemize{
+#' \itemAs far as we know, only Adobe Acrobat Reader of a sufficiently recent
+#' version can display these scenes. \itemCurrent versions ignore lighting
+#' settings. }
+#' 
+#' @param scene rgl scene object
+#' @param outtype What type of file to write?  See Details.
+#' @param prc Whether to produce an interactive PRC scene.
+#' @param title The base of the filename to produce.
+#' @param runAsy Code to run the Asymptote program.
+#' @param defaultFontsize The default fontsize for text.
+#' @param width,height Width and height of the output image, in inches.
+#' @param ppi \dQuote{Pixels per inch} to assume when converting line widths
+#' and point sizes (which rgl measures in pixels).
+#' @param ids If not \code{NULL}, write out just these rgl objects.
+#' @param ver244 Asymptote version 2.44 had a definition for its
+#' \dQuote{light()} function that was incompatibly changed in some later
+#' version.  (The new version is seen in version 2.49, but may have arrived
+#' earlier.).  Setting \code{ver244 = TRUE} makes \code{writeASY} use the older
+#' definition.
+#' @return The filename of the output file is returned invisibly.
+#' @note This function is currently under development and limited in the
+#' quality of output it produces.  Arguments will likely change.
+#' 
+#' There are a number of differences between the interactive display in
+#' Asymptote and the display in rgl.  In particular, many objects that are a
+#' fixed size in rgl will scale with the image in Asymptote.  Defaults have
+#' been chosen somewhat arbitrarily; tweaking will likely be needed.
+#' 
+#' Material properties of surfaces are not yet implemented.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{scene3d}} saves a copy of a scene to an R variable;
+#' \code{\link{rglwidget}}, \code{\link{writePLY}}, \code{\link{writeOBJ}} and
+#' \code{\link{writeSTL}} write the scene to a file in various other formats.
+#' @references J. C. Bowman and A. Hammerlindl (2008). Asymptote: A vector
+#' graphics language, TUGBOAT: The Communications of the TeX Users Group, 29:2,
+#' 288-294.
+#' @examples
+#' 
+#' x <- rnorm(20)
+#' y <- rnorm(20)
+#' z <- rnorm(20)
+#' plot3d(x, y, z, type = "s", col = "red")
+#' olddir <- setwd(tempdir())
+#' writeASY(title = "interactive")  # Produces interactive.pdf
+#' writeASY(title = "noninteractive", prc = FALSE) # Produces noninteractive.pdf
+#' setwd(olddir)
+#' 
 writeASY <- function(scene = scene3d(),
                      title = "scene",
                      outtype = c("pdf", "eps", "asy", "latex", "pdflatex"),
@@ -434,6 +493,62 @@ ticklabel RGLScale(real s)
             subst(
               ", viewport = %viewpoint%",
               pos,
+
+
+#' Set up viewpoint
+#' 
+#' Set the viewpoint orientation.
+#' 
+#' The data model can be rotated using the polar coordinates \code{theta} and
+#' \code{phi}.  Alternatively, it can be set in a completely general way using
+#' the 4x4 matrix \code{userMatrix}.  If \code{userMatrix} is specified,
+#' \code{theta} and \code{phi} are ignored.
+#' 
+#' The pointing device of your graphics user-interface can also be used to set
+#' the viewpoint interactively. With the pointing device the buttons are by
+#' default set as follows:
+#' 
+#' \describe{ \item{left}{adjust viewpoint position} \item{middle}{adjust field
+#' of view angle} \item{right or wheel}{adjust zoom factor} }
+#' 
+#' The user's view can be set with \code{fov} and \code{zoom}.
+#' 
+#' If the \code{fov} angle is set to 0, a parallel or orthogonal projection is
+#' used. Small non-zero values (e.g. 0.01 or less, but not 0.0) are likely to
+#' lead to rendering errors due to OpenGL limitations.
+#' 
+#' Prior to version 0.94, all of these characteristics were stored in one
+#' viewpoint object.  With that release the characteristics are split into
+#' those that affect the projection (the user viewpoint) and those that affect
+#' the model (the model viewpoint).  By default, this function sets both, but
+#' the \code{type} argument can be used to limit the effect.
+#' 
+#' @aliases rgl.viewpoint view3d
+#' @param theta,phi polar coordinates
+#' @param ... additional parameters to pass to \code{rgl.viewpoint}
+#' @param fov field-of-view angle in degrees
+#' @param zoom zoom factor
+#' @param scale real length 3 vector specifying the rescaling to apply to each
+#' axis
+#' @param interactive logical, specifying if interactive navigation is allowed
+#' @param userMatrix 4x4 matrix specifying user point of view
+#' @param type which viewpoint to set?
+#' @seealso \code{\link{par3d}}
+#' @keywords dynamic
+#' @examples
+#' 
+#' \dontrun{
+#' # animated round trip tour for 10 seconds
+#' 
+#' rgl.open()
+#' shade3d(oh3d(), color = "red")
+#' 
+#' start <- proc.time()[3]
+#' while ((i <- 36*(proc.time()[3] - start)) < 360) {
+#'   rgl.viewpoint(i, i/4); 
+#' }
+#' }
+#' 
               viewpoint = if (get.attrib(ids[1], "viewpoint")) {
                 "true"
               } else {
@@ -504,6 +619,70 @@ ticklabel RGLScale(real s)
       text = writeText(ids[i]),
       background = writeBackground(ids[i]),
       bboxdeco = writeBBox(ids[i]),
+
+
+#' add light source
+#' 
+#' add a light source to the scene.
+#' 
+#' Up to 8 light sources are supported. They are positioned either in world
+#' space or relative to the camera. By providing polar coordinates to theta and
+#' phi a directional light source is used. If numerical values are given to x,
+#' y and z, a point-like light source with finite distance to the objects in
+#' the scene is set up.
+#' 
+#' If \code{x} is non-null, \code{\link{xyz.coords}} will be used to form the
+#' location values, so all three coordinates can be specified in \code{x}.
+#' 
+#' @aliases rgl.light light3d
+#' @param theta,phi polar coordinates, used by default
+#' @param viewpoint.rel logical, if TRUE light is a viewpoint light that is
+#' positioned relative to the current viewpoint
+#' @param ambient,diffuse,specular light color values used for lighting
+#' calculation
+#' @param x,y,z cartesian coordinates, optional
+#' @param ... generic arguments passed through to RGL-specific (or other)
+#' functions
+#' @return This function is called for the side effect of adding a light.  A
+#' light ID is returned to allow \code{\link{rgl.pop}} to remove it.
+#' @seealso \code{\link{rgl.clear}} \code{\link{rgl.pop}}
+#' @keywords dynamic
+#' @examples
+#' 
+#' 
+#' #
+#' # a lightsource moving through the scene
+#' #
+#' data(volcano)
+#' z <- 2 * volcano # Exaggerate the relief
+#' x <- 10 * (1:nrow(z)) # 10 meter spacing (S to N)
+#' y <- 10 * (1:ncol(z)) # 10 meter spacing (E to W)
+#' zlim <- range(z)
+#' zlen <- zlim[2] - zlim[1] + 1
+#' colorlut <- terrain.colors(zlen) # height color lookup table
+#' col <- colorlut[ z - zlim[1] + 1 ] # assign colors to heights for each point
+#' 
+#' open3d()
+#' bg3d("gray50")
+#' surface3d(x, y, z, color = col, back = "lines")
+#' r <- max(y) - mean(y)
+#' lightid <- spheres3d(1, 1, 1, alpha = 0)
+#' frame <- function(time) {
+#'     a <- pi*(time - 1)
+#'     save <- par3d(skipRedraw = TRUE)
+#'     clear3d(type = "lights")
+#'     rgl.pop(id = lightid)
+#'     xyz <- matrix(c(r*sin(a) + mean(x), r*cos(a) + mean(y), max(z)), ncol = 3)
+#'     light3d(x = xyz, diffuse = "gray75", 
+#'             specular = "gray75", viewpoint.rel = FALSE) 
+#'     light3d(diffuse = "gray10", specular = "gray25")
+#'     lightid <<- spheres3d(xyz, emission = "white", radius = 4)
+#'     par3d(save)
+#'     Sys.sleep(0.02)
+#'     NULL
+#' }
+#' play3d(frame, duration = 2)
+#' 
       light = {}
     )
   }

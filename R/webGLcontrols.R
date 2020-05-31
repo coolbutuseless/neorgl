@@ -1,4 +1,3 @@
-
 # This displays an HTML5 input widget to show a subset of objects.  It assigns a random id
 # and returns that invisibly.
 
@@ -229,6 +228,60 @@ oninput = "%prefix%rgl.%id%(this.valueAsNumber)">%outputfield%',
   invisible(id)
 }
 
+
+
+#' Obsolete function to write HTML/Javascript code to control a WebGL display.
+#' 
+#' These functions write out HTML code to control WebGL displays based using
+#' the obsolete \code{writeWebGL}.  Use \code{\link{playwidget}} and related
+#' functions instead.
+#' 
+#' 
+#' @aliases propertySlider propertySetter par3dinterpSetter matrixSetter
+#' vertexSetter
+#' @param setter A function to write Javascript code, or its output, or a list
+#' containing several of these.
+#' @param minS,maxS,step,init Slider values to be displayed. Reasonable
+#' defaults are used if missing.
+#' @param labels Labels to display for each slider value.  The defaults are
+#' calculated using internal variables.  If \code{NULL}, no labels will be
+#' shown.
+#' @param id The \code{id} of the input control that will be generated.
+#' @param name The name of the input control that will be generated.
+#' @param outputid The \code{id} of the output control that will display the
+#' slider value, or \code{NULL} for none.
+#' @param index The 1-based index of this slider: it controls the corresponding
+#' entry in an indexed setter such as \code{matrixSetter}.
+#' @param ... Other parameters.
+#' @param values An array of values; rows correspond to slider positions.
+#' Alternatively, \code{NULL}; the generated function takes a single value or
+#' array of values and applies them directly.
+#' @param entries,properties,objids,prefixes Vectors describing the columns of
+#' \code{values}.
+#' @param param Parameter values corresponding to each row of \code{values}.
+#' @param interp Whether to interpolate values.  If \code{FALSE}, the
+#' Javascript function will expect non-negative integer values.  Ignored if
+#' \code{values} is \code{NULL}.
+#' @param digits How many significant digits to emit in the Javascript code.
+#' @param fn A function returned from \code{\link{par3dinterp}}.
+#' @param from,to,steps Values where \code{fn} should be evaluated.
+#' @param subscene Which subscene's properties should be modified?
+#' @param omitConstant If \code{TRUE}, do not set values that are constant
+#' across the range.
+#' @param rename A named character vector of names of Javascript properties to
+#' modify.
+#' @param fns A list containing functions returned from
+#' \code{\link{par3dinterp}}.
+#' @param matrix A character string giving the Javascript property name of the
+#' matrix to modify.
+#' @param prefix The prefix of the scene containing \code{matrix}.
+#' @param vertices A vector of vertex numbers (1-based) within an object.
+#' @param attributes A vector of attributes of a vertex, from \code{c("x", "y",
+#' "z", "r", "g", "b", "a", "nx", "ny", "nz", "radius", "ox", "oy", "oz", "ts",
+#' "tt")}.
+#' @param objid The object containing the vertices to be modified.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{rglwidget}}, \code{\link{playwidget}}
 propertySetter <- function(values = NULL, entries, properties, objids, prefixes = "",
                            param = seq_len(NROW(values)), interp = TRUE,
                            digits = 7) {
@@ -641,6 +694,53 @@ print.indexedSetter <- function(x, inScript = FALSE, ...) {
   if (!inScript) cat("\n</script>")
 }
 
+
+
+#' Set WebGL scene properties based on the age of components of objects.
+#' 
+#' Many \pkg{rgl} shapes contain lists of vertices with various attributes
+#' (available via \code{\link{rgl.attrib}}).  This function modifies the data
+#' for those attributes in a WebGL scene.
+#' 
+#' The vertex attributes are specified as follows: \describe{ \item{colors}{A
+#' vector of colors in a format suitable for input to \code{\link{col2rgb}}}
+#' \item{alpha}{A numeric vector of alpha values between 0 and 1.}
+#' \item{radii}{A numeric vector of sphere radii.} \item{vertices}{A 3-column
+#' matrix of vertex coordinates.} \item{normals}{A 3-column matrix of vertex
+#' normals.} \item{origins}{A 2-column matrix of origins for text or sprites.}
+#' \item{texcoords}{A 2-column matrix of texture coordinates.} }
+#' 
+#' All attributes must have the same number of entries (rows for the matrices)
+#' as the \code{ages} vector.  The \code{births} vector must have the same
+#' number of entries as the number of vertices in the object.
+#' 
+#' Not all objects contain all attributes listed here; if one is chosen that is
+#' not a property of the corresponding object, a Javascript \code{alert()} will
+#' be generated.
+#' 
+#' @param births Numeric vector with one value per vertex, used to determine
+#' the \dQuote{age} of the vertex when displaying it.
+#' @param ages A non-decreasing sequence of \dQuote{ages}.
+#' @param colors,alpha,radii,vertices,normals,origins,texcoords Attributes of
+#' the vertices.  Non-\code{NULL} attributes will be interpolated from these
+#' values.  See the Details section below.
+#' @param objids,prefixes The object ids and scene prefixes to modify.  These
+#' are recycled to the same length.
+#' @param digits How many digits to output in the generated Javascript code.
+#' @param param Default values to be used by a slider control calling the
+#' generated function.
+#' @return A character vector of class \code{c("ageSetter", "propertySetter")}
+#' containing Javascript code defining a function suitable for use in a
+#' \code{\link{propertySlider}}.
+#' 
+#' The function takes a single argument, \code{time}, and uses it to compute
+#' the \dQuote{age} of vertex \code{i} as \code{time - births[i]}.  Those are
+#' then used with the \code{ages} argument to linearly interpolate settings of
+#' the specified attributes. Extrapolation is constant.  Repeated values in
+#' \code{ages} can be used to obtain discontinuities in the settings.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{propertySlider}}; more detailed control is available in
+#' \code{\link{vertexSetter}}.
 ageSetter <- function(births, ages, colors = NULL, alpha = NULL,
                       radii = NULL, vertices = NULL, normals = NULL,
                       origins = NULL, texcoords = NULL, objids, prefixes = "",

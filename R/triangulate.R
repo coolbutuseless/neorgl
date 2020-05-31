@@ -1,4 +1,3 @@
-
 pointInPoly <- function(poly, pt) {
   # polygon is 2 x n, columns are vertices
   # point is 2 vector
@@ -108,6 +107,67 @@ triangulateSimple <- function(x, y, random = TRUE, plot = FALSE, partial = NA) {
   it
 }
 
+
+
+#' Triangulate a two-dimensional polygon.
+#' 
+#' This algorithm decomposes a general polygon into simple polygons and uses
+#' the \dQuote{ear-clipping} algorithm to triangulate it. Polygons with holes
+#' are supported.
+#' 
+#' Normally \code{triangulate} looks only at the \code{x} and \code{y}
+#' coordinates.  However, if one of those is constant, it is replaced with the
+#' \code{z} coordinate if present.
+#' 
+#' The algorithm works as follows.  First, it breaks the polygon into pieces
+#' separated by \code{NA} values in \code{x} or \code{y}. Each of these pieces
+#' should be a simple, non-self-intersecting polygon, separate from the other
+#' pieces.  (Though some minor exceptions to this rule may work, none are
+#' guaranteed).  The nesting of these pieces is determined.
+#' 
+#' The \dQuote{outer} polygon(s) are then merged with the polygons that they
+#' immediately contain, and each of these pieces is triangulated using the
+#' ear-clipping algorithm.
+#' 
+#' Finally, all the triangulated pieces are put together into one result.
+#' 
+#' @param x,y,z Coordinates of a two-dimensional polygon in a format supported
+#' by \code{\link{xyz.coords}}.  See Details for how \code{z} is handled.
+#' @param random Whether to use a random or deterministic triangulation.
+#' @param plot Whether to plot the triangulation; mainly for debugging
+#' purposes.
+#' @param partial If the triangulation fails, should partial results be
+#' returned?
+#' @return A three-by-n array giving the indices of the vertices of each
+#' triangle.  (No vertices are added; only the original vertices are used in
+#' the triangulation.)
+#' 
+#' The array has an integer vector attribute \code{"nextvert"} with one entry
+#' per vertex, giving the index of the next vertex to proceed counter-clockwise
+#' around outer polygon boundaries, clockwise around inner boundaries.
+#' @note Not all inputs will succeed, even when a triangulation is possible.
+#' Generally using \code{random = TRUE} will find a successful triangulation if
+#' one exists, but it may occasionally take more than one try.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{extrude3d}} for a solid extrusion of a polygon,
+#' \code{\link{polygon3d}} for a flat display; both use \code{triangulate}.
+#' @references See the Wikipedia article \dQuote{polygon triangulation} for a
+#' description of the ear-clipping algorithm.
+#' @keywords graphics
+#' @examples
+#' 
+#' theta <- seq(0, 2*pi, len = 25)[-25]
+#' theta <- c(theta, NA, theta, NA, theta, NA, theta, NA, theta)
+#' r <- c(rep(1.5, 24), NA, rep(0.5, 24), NA, rep(0.5, 24), NA, rep(0.3, 24), NA, rep(0.1, 24))
+#' dx <- c(rep(0, 24), NA, rep(0.6, 24), NA, rep(-0.6, 24), NA, rep(-0.6, 24), NA, rep(-0.6, 24))
+#' x <- r*cos(theta) + dx
+#' y <- r*sin(theta)
+#' plot(x, y, type = "n")
+#' polygon(x, y)
+#' triangulate(x, y, plot = TRUE)
+#' open3d()
+#' polygon3d(x, y, x - y, col = "red")
+#' 
 triangulate <- function(x, y = NULL, z = NULL, random = TRUE, plot = FALSE, partial = NA) {
   xyz <- xyz.coords(x, y, z)
   if (xyz$xlab == "Index" && is.null(z) && (is.null(ncol(x)) || ncol(x) == 2L)) {
@@ -274,6 +334,42 @@ nestPolys <- function(x, y = NULL) {
 }
 
 
+
+
+#' Generate extrusion mesh
+#' 
+#' Given a two-dimensional polygon, this generates a three-dimensional
+#' extrusion of the shape by triangulating the polygon and creating a cylinder
+#' with that shape as the end faces.
+#' 
+#' The extrusion is always constructed with the polygon in the xy plane at
+#' \code{z = 0} and another copy at \code{z = thickness}.  Use the
+#' transformation functions (e.g. \code{\link{rotate3d}}) to obtain other
+#' orientations and placements.
+#' 
+#' @param x,y A polygon description in one of the forms supported by
+#' \code{\link{triangulate}}.
+#' @param thickness The extrusion will have this thickness.
+#' @param smooth logical; should normals be added so that the edges of the
+#' extrusion appear smooth?
+#' @param \dots Other parameters to pass to \code{\link{tmesh3d}} when
+#' constructing the mesh.
+#' @return A mesh object containing a triangulation of the polygon for each
+#' face, and quadrilaterals for the sides.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{polygon3d}} for a simple polygon,
+#' \code{\link{triangulate}} for the triangulation, \code{\link{turn3d}} for a
+#' solid of rotation.
+#' @keywords graphics
+#' @examples
+#' 
+#' x <- c(1:10, 10:1)
+#' y <- rev(c(rep(c(0, 2), 5), rep(c(1.5, -0.5), 5)))
+#' plot(x, y, type = "n")
+#' polygon(x, y)
+#' open3d()
+#' shade3d( extrude3d(x, y), col = "red" )
+#' 
 extrude3d <- function(x, y = NULL, thickness = 1, smooth = FALSE, ...) {
   xy <- xy.coords(x, y)
   x <- xy$x
@@ -308,6 +404,55 @@ extrude3d <- function(x, y = NULL, thickness = 1, smooth = FALSE, ...) {
   res
 }
 
+
+
+#' Triangulate and draw a polygon in three dimensions.
+#' 
+#' This function takes a description of a flat polygon in x, y and z
+#' coordinates, and draws it in three dimensions.
+#' 
+#' The function triangulates the two dimensional polygon described by
+#' \code{coords}, then applies the triangulation to all three coordinates.  No
+#' check is made that the polygon is actually all in one plane, but the results
+#' may be somewhat unpredictable (especially if \code{random = TRUE}) if it is
+#' not.
+#' 
+#' Polygons need not be simple; use \code{NA} to indicate separate closed
+#' pieces.  For \code{fill = FALSE} there are no other restrictions on the
+#' pieces, but for \code{fill = TRUE} the resulting two-dimensional polygon
+#' needs to be one that \code{\link{triangulate}} can handle.
+#' 
+#' @param x,y,z Vertices of the polygon in a form accepted by
+#' \code{\link{xyz.coords}}.
+#' @param fill logical; should the polygon be filled?
+#' @param plot logical; should the polygon be displayed?
+#' @param coords Which two coordinates (\code{x = 1}, \code{y = 2}, \code{z =
+#' 3}) describe the polygon.
+#' @param random Should a random triangulation be used?
+#' @param \dots Other parameters to pass to \code{\link{lines3d}} or
+#' \code{\link{shade3d}} if \code{plot = TRUE}.
+#' @return If \code{plot = TRUE}, the id number of the lines (for \code{fill =
+#' FALSE}) or triangles (for \code{fill = TRUE}) that have been plotted.
+#' 
+#' If \code{plot = FALSE}, then for \code{fill = FALSE}, a vector of indices
+#' into the XYZ matrix that could be used to draw the polygon.  For \code{fill
+#' = TRUE}, a triangular mesh object representing the triangulation.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{extrude3d}} for a solid extrusion of a polygon,
+#' \code{\link{triangulate}} for the triangulation.
+#' @keywords graphics
+#' @examples
+#' 
+#' theta <- seq(0, 4*pi, len = 50)
+#' r <- theta + 1
+#' r <- c(r[-50], rev(theta*0.8) + 1)
+#' theta <- c(theta[-50], rev(theta))
+#' x <- r*cos(theta)
+#' y <- r*sin(theta)
+#' plot(x, y, type = "n")
+#' polygon(x, y)
+#' polygon3d(x, y, x + y, col = "blue")
+#' 
 polygon3d <- function(x, y = NULL, z = NULL, fill = TRUE, plot = TRUE,
                       coords = 1:2, random = TRUE, ...) {
   xyz <- xyz.coords(x, y, z)

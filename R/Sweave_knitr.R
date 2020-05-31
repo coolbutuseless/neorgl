@@ -1,10 +1,59 @@
-
-
 ##
 ## Sweave device
 ##
 ##
 
+
+
+#' Integrating \code{rgl} with \code{Sweave}
+#' 
+#' As of 2.13.0, it is possible to include \code{rgl} graphics into a
+#' \link{Sweave} document.  These functions support that integration.
+#' 
+#' The \code{rgl.Sweave} function is not normally called by the user.  The user
+#' specifies it as the graphics driver when opening the code chunk, e.g. by
+#' using
+#' 
+#' \preformatted{<<fig = TRUE, pdf = FALSE, grdevice = rgl.Sweave, resolution =
+#' 100>>=}
+#' 
+#' When the \code{rgl} device is closed at the end of the code chunk,
+#' \code{rgl.Sweave.off()} will be called automatically.  It will save a
+#' snapshot of the last image (by default in \file{.png} format) for inclusion
+#' in the Sweave document and (by default) close the device.  Alternatively,
+#' the \code{Sweave.snapshot()} function can be called to save the image before
+#' the end of the chunk.  Only one snapshot will be taken per chunk.
+#' 
+#' Several chunk options are used by the \code{rgl.Sweave} device: \describe{
+#' \item{stayopen}{(default \code{FALSE}).  If \code{TRUE} then the \code{rgl}
+#' device will \emph{not} be closed at the end of the chunk, instead a call to
+#' \code{Sweave.snapshot()} will be used if it has not been called explicitly.
+#' Subsequent chunks can add to the scene.} \item{outputtype}{(default
+#' \code{png}).  The output may be specified as \code{outputtype = pdf} or
+#' \code{outputtype = eps} instead, in which case the
+#' \code{\link{rgl.postscript}} function will be used to write output in the
+#' specified format.  Note that \code{\link{rgl.postscript}} has limitations
+#' and does not always render scenes correctly.} \item{delay}{(default 0.1).
+#' After creating the display window, \code{\link{Sys.sleep}} will be called to
+#' delay this many seconds, to allow the display system to initialize.  This is
+#' needed in X11 systems which open the display asynchronously.  If the default
+#' time is too short, \code{rgl.Sweave} may falsely report that the window is
+#' too large to open.} }
+#' 
+#' @aliases rgl.Sweave rgl.Sweave.off Sweave.snapshot
+#' @param name,width,height,options,...  These arguments are passed by
+#' \code{\link{Sweave}} to \code{rgl.Sweave} when it opens the device.
+#' @return These functions are called for their side effects.
+#' @note We recommend turning off all other graphics drivers in a chunk that
+#' uses \code{grdevice = rgl.Sweave}.  The \code{rgl} functions do not write to
+#' a standard graphics device.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{RweaveLatex}} for a description of alternate graphics
+#' drivers in Sweave, and standard options that can be used in code chunks.
+#' 
+#' \code{\link{hook_rgl}} and \code{\link{hook_webgl}} allow fixed or
+#' interactive \pkg{rgl} scenes to be embedded in \pkg{knitr} documents.
+#' @keywords utilities
 rgl.Sweave <- function(name, width, height, options, ...) {
   if (length(hook <- getHook("on.rgl.close"))) {
     # test is for compatibility with R < 3.0.0
@@ -138,6 +187,54 @@ hook_webgl <- function(before, options, envir) {
   res
 }
 
+
+
+#' Hook functions to use with \pkg{knitr}
+#' 
+#' These functions allow \pkg{rgl} graphics to be embedded in \pkg{knitr}
+#' documents, either as bitmaps (\code{hook_rgl} with format \code{"png"}),
+#' fixed vector graphics (\code{hook_rgl} with format \code{"eps"},
+#' \code{"pdf"} or \code{"postscript"}), or interactive WebGL graphics
+#' (\code{hook_webgl}).  \code{hook_rglchunk} is not normally invoked by the
+#' user; it is the hook that supports automatic creation and deletion of rgl
+#' scenes.
+#' 
+#' The \code{setupKnitr()} function needs to be called once at the start of the
+#' document to install the \pkg{knitr} hooks.
+#' 
+#' The following chunk options are supported: \itemize{ \item
+#' \code{rgl.keepopen}: no longer used.  Ignored with a warning.
+#' 
+#' \item \code{rgl.newwindow} (default \code{TRUE}): Whether to open a new
+#' window for the chunk.
+#' 
+#' \item \code{rgl.closewindows} (default \code{FALSE}): Whether to close
+#' windows at the end of the chunk.
+#' 
+#' \item \code{rgl.margin} (default 100): number of pixels by which to indent
+#' the WebGL window.
+#' 
+#' \item \code{dpi}, \code{fig.retina}, \code{fig.width}, \code{fig.height}:
+#' standard \pkg{knitr} chunk options used to set the size of the output.
+#' 
+#' \item \code{fig.keep}, \code{fig.hold}, \code{fig.beforecode}: standard
+#' \pkg{knitr} chunk options used to control the display of plots.
+#' 
+#' \item \code{dev}: used by \code{hook_rgl} to set the output format.  May be
+#' \code{"eps"}, \code{"postscript"}, \code{"pdf"} or \code{"png"} (default:
+#' \code{"png"}). }
+#' 
+#' @aliases hook_rgl hook_webgl hook_rglchunk setupKnitr
+#' @param autoprint If true, \code{rgl} commands automatically plot (with low
+#' level plots suppressed by the default value of the \code{fig.keep} chunk
+#' option.)
+#' @param before,options,envir Standard \pkg{knitr} hook function arguments.
+#' @return A string to be embedded into the output, or \code{NULL} if called
+#' when no output is available.
+#' @author Originally by Yihui Xie in the \pkg{knitr} package; modified by
+#' Duncan Murdoch.
+#' @seealso \code{\link{rgl.Sweave}} embeds fixed images in Sweave documents.
+#' @keywords utilities
 hook_rgl <- function(before, options, envir) {
   if (before) {
     do_newwindow(options)
@@ -489,6 +586,27 @@ hook_figbeforecode <- fns[["hook_figbeforecode"]]
 knit_print.rglId <- fns[["knit_print.rglId"]]
 rm(fns)
 
+
+
+#' Get R Markdown figure dimensions in pixels.
+#' 
+#' In an R Markdown document, figure dimensions are normally specified in
+#' inches; these are translated into pixel dimensions when HTML output is
+#' requested and \code{\link{rglwidget}} is used.  These functions reproduce
+#' that translation.
+#' 
+#' 
+#' @aliases figWidth figHeight
+#' @return When used in an R Markdown document, these functions return the
+#' requested current dimensions of figures in pixels.  Outside such a document,
+#' \code{NULL} is returned.
+#' @author Duncan Murdoch
+#' @examples
+#' 
+#' # No useful return value outside of R Markdown:
+#' figWidth()
+#' figHeight()
+#' 
 figWidth <- function() {
   if (length(result <- with(
     opts_current$get(c("fig.width", "dpi", "fig.retina")),

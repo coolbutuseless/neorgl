@@ -2,6 +2,72 @@
 ## Modified by Michael Friendly: added barblen (to specify absolute barb length)
 ## Modified by DJM: multiple changes
 
+
+
+#' Draw an arrow in a scene.
+#' 
+#' Draws various types of arrows in a scene.
+#' 
+#' Four types of arrows can be drawn.  The shapes of all of them are affected
+#' by \code{p0}, \code{p1}, \code{barblen}, \code{s}, \code{theta}, material
+#' properties in \code{...}, and \code{spriteOrigin}.  Other parameters only
+#' affect some of the types, as shown. \describe{
+#' \item{list("\"extrusion\"")}{(default) A 3-dimensional flat arrow, drawn
+#' with \code{\link{shade3d}}.  Affected by \code{width}, \code{thickness} and
+#' \code{smooth}.} \item{list("\"lines\"")}{Drawn with lines, similar to
+#' \code{\link{arrows}}, drawn with \code{\link{segments3d}}.  Affected by
+#' \code{n}.} \item{list("\"flat\"")}{A flat arrow, drawn with
+#' \code{\link{polygon3d}}.  Affected by \code{width} and \code{smooth}.}
+#' \item{list("\"rotation\"")}{A solid of rotation, drawn with
+#' \code{\link{shade3d}}.  Affected by \code{n} and \code{width}.} }
+#' 
+#' Normally this function draws just one arrow from \code{p0} to \code{p1}, but
+#' if \code{spriteOrigin} is given (in any form that
+#' \code{\link{xyz.coords}(spriteOrigin)} can handle), arrows will be drawn for
+#' each point specified, with \code{p0} and \code{p1} interpreted relative to
+#' those origins.  The arrows will be drawn as 3D sprites which will maintain
+#' their orientation as the scene is rotated, so this is a good way to indicate
+#' particular locations of interest in the scene.
+#' 
+#' @param p0 The base of the arrow.
+#' @param p1 The head of the arrow.
+#' @param barblen The length of the barbs (in display coordinates). Default
+#' given by \code{s}.
+#' @param s The length of the barbs as a fraction of line length.  Ignored if
+#' \code{barblen} is present.
+#' @param theta Opening angle of barbs
+#' @param type Type of arrow to draw.  Choose one from the list of defaults.
+#' Can be abbreviated.  See below.
+#' @param n Number of barbs.
+#' @param width Width of shaft as fraction of barb width.
+#' @param thickness Thickness of shaft as fraction of barb width.
+#' @param spriteOrigin If arrow is to be replicated as sprites, the origins
+#' relative to which the sprites are drawn.
+#' @param plot If \code{TRUE} (the default), plot the object; otherwise return
+#' the computed data that would be used to plot it.
+#' @param \dots Material properties passed to \code{\link{polygon3d}},
+#' \code{\link{shade3d}} or \code{\link{segments3d}}.
+#' @return If \code{plot = TRUE} (the default), this is called mainly for the
+#' side effect of drawing the arrow; invisibly returns the id(s) of the objects
+#' drawn.
+#' 
+#' If \code{plot = FALSE}, the data that would be used in the plot (not
+#' including material properties) is returned.
+#' @author Design based on \code{heplots::\link[heplots]{arrow3d}}, which
+#' contains modifications by Michael Friendly to a function posted by Barry
+#' Rowlingson to R-help on 1/10/2010.  Additions by Duncan Murdoch.
+#' @examples
+#' 
+#' \donttest{
+#' xyz <- matrix(rnorm(300), ncol = 3)
+#' plot3d(xyz)
+#' arrow3d(xyz[1,], xyz[2,], type = "extrusion", col = "red")
+#' arrow3d(xyz[3,], xyz[4,], type = "flat",      col = "blue")
+#' arrow3d(xyz[5,], xyz[6,], type = "rotation",  col = "green")
+#' arrow3d(xyz[7,], xyz[8,], type = "lines",     col = "black")
+#' arrow3d(spriteOrigin = xyz[9:12,],            col = "purple")
+#' }
+#' 
 arrow3d <- function(p0 = c(1, 1, 1), p1 = c(0, 0, 0), barblen, s = 1 / 3, theta = pi / 12,
                     type = c("extrusion", "lines", "flat", "rotation"),
                     n = 3,

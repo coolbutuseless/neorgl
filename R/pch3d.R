@@ -1,3 +1,56 @@
+#' Plot symbols similar to base graphics.
+#' 
+#' This function plots symbols similarly to what the base graphics function
+#' \code{\link{points}} does when \code{pch} is specified.
+#' 
+#' The list of symbols encoded by numerical \code{pch} values is given in the
+#' \code{\link{points}} help page.
+#' 
+#' @param x,y,z The locations at which to plot in a form suitable for use in
+#' \code{\link{xyz.coords}}.
+#' @param pch A vector of integers or single characters describing the symbols
+#' to plot.
+#' @param bg The fill color(s) to use for \code{pch} from 21 to 25.
+#' @param cex A relative size of the symbol to plot.
+#' @param radius An absolute size of the symbol to plot in user coordinates.
+#' @param color The color(s) to use for symbols.
+#' @param lit Whether the object responds to lighting or just shows the
+#' displayed color directly.
+#' @param \dots Other material properties.
+#' @return A vector of object id values is returned invisibly.  Separate
+#' objects will be drawn for each different combination of \code{pch} value
+#' from 0 to 25, \code{color} and \code{bg}, and another holding all the
+#' character symbols.
+#' @note This function is not a perfect match to how the \code{\link{points}}
+#' function works due to limitations in \pkg{rgl} and OpenGL.  In particular:
+#' 
+#' Symbols with numbers from 1 to 25 are drawn as 3D sprites (see
+#' \code{\link{sprites3d}}), so they will resize as the window is zoomed.
+#' Letters and numbers from 32 to 255 (which are mapped to letters) are drawn
+#' using \code{\link{text3d}}, so they maintain a fixed size.
+#' 
+#' A calculation somewhat like the one in \code{\link{plot3d}} that sets the
+#' size of spheres is used to choose the size of sprites based on \code{cex}
+#' and the current scaling.  This will likely need manual tweaking.  Use the
+#' \code{radius} argument for a fixed size.
+#' 
+#' No special handling is done for the case of \code{pch = "."}.  Use
+#' \code{points3d} for small dots.
+#' 
+#' As of \pkg{rgl} version 0.100.10, background and foreground colors can vary
+#' from symbol to symbol.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{points3d}}, \code{\link{text3d}}, \code{\link{plot3d}},
+#' \code{\link{points}}.
+#' @examples
+#' 
+#' open3d()
+#' i <- 0:25; x <- i %% 5; y <- rep(0, 26); z <- i %/% 5
+#' pch3d(x, y, z, pch = i, bg = "gray", color = rainbow(26))
+#' text3d(x, y, z + 0.3, i)
+#' pch3d(x + 5, y, z, pch = i+65)
+#' text3d(x + 5, y, z + 0.3, i+65)
+#' 
 pch3d <- function(x, y = NULL, z = NULL, pch = 1, bg = material3d("color")[1],
                   cex = 1, radius = avgscale * cex / 8, color = "black", lit = FALSE, ...) {
   xyz <- xyz.coords(x, y, z)

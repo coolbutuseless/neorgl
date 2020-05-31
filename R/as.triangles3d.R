@@ -1,3 +1,32 @@
+#' Convert an object to triangles.
+#' 
+#' This generic and its methods extract or creates a matrix of coordinates of
+#' triangles from an object, suitable for passing to \code{\link{triangles3d}}.
+#' 
+#' The method for \code{"rglId"} objects can extract several different
+#' attributes, organizing them as it would organize the vertices for the
+#' triangles.
+#' 
+#' @aliases as.triangles3d as.triangles3d.rglId
+#' @param obj The object to convert.
+#' @param attribute Which attribute of an rgl object to extract?
+#' @param subscene Which subscene is this object in?
+#' @param \dots Additional arguments used by the methods.
+#' @return An \code{n x 3} matrix containing the vertices of triangles making
+#' up the object.  Each successive 3 rows of the matrix corresponds to a
+#' triangle.
+#' 
+#' If the attribute doesn't exist, \code{NULL} will be returned.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{as.mesh3d}} to also capture material properties.
+#' @examples
+#' 
+#' open3d()
+#' x <- surface3d(x = 1:10, y = 1:10, z = rnorm(100), col = "red")
+#' tri <- as.triangles3d(x)
+#' open3d()
+#' triangles3d(tri, col = "blue")
+#' 
 as.triangles3d <- function(obj, ...) {
   UseMethod("as.triangles3d")
 }

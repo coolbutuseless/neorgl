@@ -1,3 +1,87 @@
+#' Saves the current scene to a variable, and displays such variables.
+#' 
+#' This function saves a large part of the RGL state associated with the
+#' current window to a variable.
+#' 
+#' The components saved are: the \code{\link{par3d}} settings, the
+#' \code{\link{material3d}} settings, the \code{\link{bg3d}} settings, the
+#' lights and the objects in the scene.
+#' 
+#' In most cases, calling \code{\link{plot3d}} on that variable will duplicate
+#' the scene.  (There are likely to be small differences, mostly internal, but
+#' some aspects of the scene are not currently available.) If textures are
+#' used, the name of the texture will be saved, rather than the contents of the
+#' texture file.
+#' 
+#' Other than saving the code to recreate a scene, saving the result of
+#' \code{scene3d} to a file will allow it to be reproduced later most
+#' accurately.  In roughly decreasing order of fidelity,
+#' \code{\link{writeWebGL}}, \code{\link{writePLY}}, \code{\link{writeOBJ}} and
+#' \code{\link{writeSTL}} write the scene to a file in formats readable by
+#' other software.
+#' 
+#' If \code{minimal = TRUE} (the default), then attributes of objects will not
+#' be saved if they currently have no effect on the display, thereby reducing
+#' the file size.  Set \code{minimal = FALSE} if the scene is intended to be
+#' used in a context where the appearance could be changed.  Currently this
+#' only affects the inclusion of normals; with \code{minimal = TRUE} they are
+#' omitted for objects when the material is not lit.
+#' 
+#' @aliases scene3d rglscene-class rglobject-class plot3d.rglscene
+#' plot3d.rglobject print.rglscene print.rglobject
+#' @param minimal Should attributes be skipped if they currently have no
+#' effect?  See Details.
+#' @param x An object of class \code{"rglscene"}
+#' @param add Whether to open a new window, or add to the existing one.
+#' @param ... Additional parameters, currently ignored.
+#' @return The \code{scene3d} function returns an object of class
+#' \code{"rglscene"}.  This is a list with some or all of the components:
+#' \item{material}{The results returned from a \code{\link{material3d}} call.}
+#' \item{rootSubscene}{A list containing information about the main ("root")
+#' subscene.  This may include: \describe{ \item{id}{The scene id.}
+#' \item{type}{"subscene"} \item{par3d}{The \code{\link{par3d}} settings for
+#' the subscene.} \item{embeddings}{The \code{\link{subsceneInfo}()$embeddings}
+#' for the main subscene.} \item{objects}{The ids for objects in the subscene.}
+#' \item{subscenes}{A recursive list of child subscenes.}}} \item{objects}{A
+#' list containing the RGL lights, background and objects in the scene.}
+#' 
+#' The objects in the \code{objects} component are of class \code{"rglobject"}.
+#' They are lists containing some or all of the components \item{id}{The RGL
+#' identifier of the object in the original scene.} \item{type}{A character
+#' variable identifying the type of object.} \item{material}{Components of the
+#' material that differ from the scene material.} \item{vertices, normals,
+#' etc.}{Any of the attributes of the object retrievable by
+#' \code{\link{rgl.attrib}}.} \item{ignoreExtent}{A logical value indicating
+#' whether this object contributes to the bounding box. Currently this may
+#' differ from the object in the original scene.} \item{objects}{Sprites may
+#' contain other objects; they will be stored here as a list of
+#' \code{"rglobject"}s.}
+#' 
+#' Lights in the scene are stored similarly, mixed into the \code{objects}
+#' list.
+#' 
+#' The \code{plot3d} methods invisibly return a vector of RGL object ids that
+#' were plotted.  The \code{print} methods invisibly return the object that was
+#' printed.
+#' @author Duncan Murdoch
+#' @seealso \code{\link{rglwidget}}, \code{\link{writePLY}},
+#' \code{\link{writeOBJ}} and \code{\link{writeSTL}} write the scene to a file
+#' in various formats.
+#' @keywords graphics
+#' @examples
+#' 
+#' open3d()
+#' z <- 2 * volcano        # Exaggerate the relief
+#' x <- 10 * (1:nrow(z))   # 10 meter spacing (S to N)
+#' y <- 10 * (1:ncol(z))   # 10 meter spacing (E to W)
+#' persp3d(x, y, z, col = "green3", aspect = "iso")
+#' 
+#' s <- scene3d()
+#' # Make it bigger
+#' s$par3d$windowRect <- 1.5*s$par3d$windowRect
+#' # and draw it again
+#' plot3d(s)
+#' 
 scene3d <- function(minimal = TRUE) {
   saveSubscene <- currentSubscene3d()
   on.exit(useSubscene3d(saveSubscene))
@@ -296,6 +380,64 @@ plot3d.rglobject <- function(x, ...) {
     abclines = abclines3d,
     planes = planes3d,
     surface = surface3d,
+
+
+#' add sprite set shape
+#' 
+#' Adds a sprite set shape node to the scene.
+#' 
+#' Simple sprites (used when \code{shapes} is \code{NULL}) are 1 by 1 squares
+#' that are directed towards the viewpoint. Their primary use is for fast (and
+#' faked) atmospherical effects, e.g. particles and clouds using alpha blended
+#' textures. Particles are Sprites using an alpha-blended particle texture
+#' giving the illusion of clouds and gasses.  The centre of each square will be
+#' at the coordinates given by \code{x, y, z}.
+#' 
+#' When \code{shapes} is not \code{NULL}, it should be a vector of identifers
+#' of objects to plot in the scene (e.g. as returned by plotting functions or
+#' by \code{\link{rgl.ids}}).  These objects will be removed from the scene and
+#' duplicated as a sprite image in a constant orientation, as specified by
+#' \code{userMatrix}.  The origin \code{0, 0, 0} will be plotted at the
+#' coordinates given by \code{x, y, z}.
+#' 
+#' The \code{userMatrix} argument is ignored for \code{shapes = NULL}.  For
+#' shapes, \code{sprites3d} defaults the matrix to
+#' \code{r3dDefaults$userMatrix} while \code{rgl.sprites} defaults it to an
+#' identity transformation.
+#' 
+#' If any coordinate is \code{NA}, the sprite is not plotted.
+#' 
+#' The id values of the shapes are retrieved using \code{rgl.attrib(id,
+#' "ids")}; the user matrix is retrieved using \code{rgl.attrib(id,
+#' "usermatrix")}.
+#' 
+#' @aliases sprites3d particles3d rgl.sprites
+#' @param x,y,z point coordinates.  Any reasonable way of defining the
+#' coordinates is acceptable.  See the function
+#' \code{\link[grDevices]{xyz.coords}} for details.
+#' @param radius vector or single value defining the sphere radius
+#' @param shapes \code{NULL} for a simple square, or a vector of identifiers of
+#' shapes in the scene
+#' @param userMatrix if \code{shape} is not \code{NULL}, the transformation
+#' matrix for the shapes
+#' @param fixedSize should sprites remain at a fixed size, or resize with the
+#' scene?
+#' @param ... material properties when \code{shape == 0}, texture mapping is
+#' supported
+#' @return These functions are called for the side effect of displaying the
+#' sprites.  The shape ID of the displayed object is returned.
+#' @seealso \code{\link{rgl.material}}
+#' @keywords dynamic
+#' @examples
+#' 
+#' open3d()
+#' particles3d( rnorm(100), rnorm(100), rnorm(100), color = rainbow(100) )
+#' # is the same as
+#' sprites3d( rnorm(100), rnorm(100), rnorm(100), color = rainbow(100),
+#'   lit = FALSE, alpha = .2,
+#'   textype = "alpha", texture = system.file("textures/particle.png", package = "rgl") )
+#' sprites3d( rnorm(10) + 6, rnorm(10), rnorm(10), shape = shade3d(tetrahedron3d(), col = "red") )
+#' 
     sprites = sprites3d,
     light = light3d,
     clipplanes = clipplanes3d,
